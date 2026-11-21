@@ -8,5 +8,15 @@ Read in this order:
 3. [GAMEPLAY_SHOP_HANDOFF.md](GAMEPLAY_SHOP_HANDOFF.md): test cars, customer cars with random paint and plates,
    office restored, shop front (shutters, door, control panel, open-the-shop start), paper notice, HUD auto-size fix.
 
-`SESSION_HANDOFF.md` refers to `PROGRESS.md`, `VERTICAL_SLICE_PLAN.md`, `UI_PRD.md`, `UI_DESIGN_SYSTEM.md` and
-`PLAYTEST_M5.md`; those were not in Downloads on 2026-11-20. Put them in this folder when found.
+Also here (added 2026-11-21):
+
+- [PROGRESS.md](PROGRESS.md): dated log of every change, newest first. **Add your entry at the top.**
+- [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md), [UI_PRD.md](UI_PRD.md),
+  [UI_DESIGN_SYSTEM.md](UI_DESIGN_SYSTEM.md), [UI_REVIEW_2026-11-19.md](UI_REVIEW_2026-11-19.md),
+  [PLAYTEST_M5.md](PLAYTEST_M5.md).
+
+## Working together
+
+Rules for people and their AI: [CLAUDE.md](CLAUDE.md). With Claude Code, `.claude/settings.json` pulls when a
+session starts and commits + pushes after every reply (`tools/sync-docs.sh`). Clone this repo and open it as the
+project folder (or a parent folder with the same hooks) to get that.

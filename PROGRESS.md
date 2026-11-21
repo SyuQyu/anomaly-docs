@@ -1,0 +1,553 @@
+# Car Repair Shop [ANOMALY]: progress log
+
+Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
+
+## 2026-11-19: CCTV rebuilt to the user's "security system" reference ✅ (solo Play-tested, not published)
+
+- **New `CCTVUI.Desk`** (design 1280×720, one UIScale fit):
+  - Paper header plate: cog + wrench logo, JOTHEM AUTO REPAIR / SECURITY SYSTEM v1.2.
+  - CAMERA NETWORK ● ONLINE box.
+  - Camera list (`Cams.List`, cards from `CamTemplate` with a thumbnail, code and area).
+  - CONTROLS: ▲▼ select, ▶ view recording, X exit monitor, with key hints under each label.
+  - The feed window, with burnt-in camera name, blinking REC, a "11/18/1997 11:40:02 PM" style stamp, scanlines,
+    vignette and scan bar.
+  - EVENT LOG and SITE MAP panels, and a taped paper NOTE with a red stamp.
+  - Metal backplate frames mask everything except the feed.
+- **Feed framing:** the feed is a window onto the real camera. `frameCamera` widens the FOV and angles the camera
+  so each marker's own FieldOfView fills exactly the window.
+- **Site map** is drawn from `Markers.Areas` and the CCTV markers (positions and look directions), so it follows
+  map changes. Click a tag to switch; the selected tag is green with a view cone.
+- **Event log:** a real motion check runs once a second, only while viewing. It looks for players and
+  `Workspace.Customers` NPCs that move in a camera's view cone (90 studs, 48°, line of sight). It logs "Motion
+  detected." straight away and "No motion." after 5 s still. Also "[SYSTEM] Monitor on. Recording." when the
+  monitor opens.
+- **View Recording** (R / X / ▶) logs "No tape in the recorder." for now.
+- `CCTVController.Log(source, message, color)` is exposed so future anomalies can write to the log.
+- **Thumbnails:** each camera card reads a `Thumbnail` attribute (image id) on its marker; until one is set it
+  shows NO IMAGE.
+- **Compact layout:** below 0.72 scale (phones) it switches to 980×500 with the list, a big feed and an exit button
+  only (no map, log or note). That's about 0.76 scale on an iPhone landscape screen.
+- Tunables live in `ShopClientConfig.CCTV_*`, copy in `ShiftShared.COPY.Cctv`.
+
+## 2026-11-19: UI pass 3, review + refine ✅ (solo Play-tested at desktop size, not published)
+
+Full findings and changes: [UI_REVIEW_2026-11-19.md](UI_REVIEW_2026-11-19.md).
+- Two breakages from the map/lighting rework fixed: `Lighting.CCTVGrade` was missing, which stopped the case file,
+  clock, menu and night notice from starting; `DiagnosticUI.Scanner.Side` was missing, so the scanner showed no
+  readings.
+- The decision is now RELEASED / QUARANTINE rubber stamps inside the work order (`Columns.Right.Decide`), replacing
+  the card panel the clipboard used to cover.
+- New `HudCover`: the HUD hides under full-screen documents and devices.
+- Restyled: dialogue as subtitles, crew as a paper roster, CCTV LED channel list, case file index tabs, menu dim.
+  The work order and HUD text are larger.
+- **Place state at this point:** the shop structure, Baseplate, terrain and night lighting are missing from the
+  Workspace and Lighting (being rebuilt by the user?), so a fresh Play falls through the world. The UI tests used a
+  Play-only floor.
+- Also 2026-11-19: `Modal` set on one button per modal screen (LaterButton, NewShiftButton, StayButton, case file
+  CloseButton, StartButton, CCTV ExitButton), so the first-person mouse is free while they're open.
+
+## 2026-11-18: M5 playtest prep ✅ (solo Play-tested, not published)
+
+Guide, observer sheet and questions: [PLAYTEST_M5.md](PLAYTEST_M5.md). The playtest itself is the user's (publish + friends).
+
+- **Night notice** (`BriefingUI` + `BriefingController`): a paper memo from the owner, shown once when you join. Five
+  rules: talk and take keys, find the fault first, compare car/owner with the order, "some cars that come in at night
+  are not what they say they are", release vs quarantine (and that holding an honest car costs). Enter / A / Space /
+  button closes it. Reread from the menu ("Night Notice", new 3rd item). Copy in `ShiftShared.COPY.Briefing`.
+- **Playtest analytics** (`ShopSystem.PlaytestLog`, `ShiftConfig.PLAYTEST_*`): `AnalyticsService:LogCustomEvent`
+  `Decision` (1 = right call; fields: Normal/Anomalous, choice, anomaly ids) and `ShiftEnded` (right calls; fields:
+  "x/3", reputation, player count). The deciding player is `customer.Decider` (the one who called them back).
+- **Fixed a truth leak:** quarantining a normal customer used to show "left angry, Reputation −1" and drop REP on the
+  HUD at once, so you knew immediately you'd been wrong. Now both cases say "Car quarantined. X left without it.", the
+  reputation is held (`pendingReputation`) and applied when the shift ends, and the mid-shift log has no Reputation.
+- **Tested in solo Play:** a natural 3-customer shift with a random pick (customer 2 got A2; all three quarantined):
+  report showed Anomaly + "odometer reads lower than the order", reputation −2, 4 analytics events fired, START NEXT
+  SHIFT reset to shift 2. A 1-customer normal shift (test settings, restored): HUD stayed REP 0 with the neutral notice,
+  report −1. Briefing screenshot checked. Console: only the slow-load "DialogueGui" infinite-yield warning.
+- **Multiplayer review** (by reading, not tested): see "Known limits" in the guide (work order slides in for everyone,
+  only the caller decides, A3/A4 depend on the nearest player, anyone can start the next shift). StreamingEnabled is on;
+  the whole shop fits in the stream radius, so CCTV cameras and props load.
+
+## 2026-11-18: M4 anomalies ✅ (solo Play-tested, not published)
+
+One customer per shift (random, `AnomalyConfig.ANOMALOUS_PER_SHIFT` 1) is anomalous with 1 anomaly (60%) or 2 (40%,
+`SECOND_CHANCE`). Weighted by GDD rarity (`RARITY` Common 60 / Uncommon 25 / Rare 10 / VeryRare 5).
+
+**Data format** (`ServerScriptService.ShopSystem.AnomalyDefinitions`, the format the full Director can read later):
+each entry has `Id`, `Code`, `Category`, `Rarity`, `Conflicts`, `Short`, `Reveal(spec)` and optional phase hooks
+`Spec(spec, rng)`, `Customer(customer)`, `Seated(customer)`, `Standing(customer)`, `Removed(customer)`.
+`AnomalyService`: `AnomalousIndices`, `Pick` (weighted, no repeats, honours conflicts both ways), `Run(spec, phase, ...)`
+(each hook in a pcall with a warning), `Reveal(spec)` → findings {Id, Code, Short, Text}. Hooks are called from
+ShiftService (Spec) and CustomerService (spawned, seated, call-back, removed).
+
+| | Id | Category / rarity | What happens |
+|---|---|---|---|
+| A1 | WrongPlate | Vehicle / Common | One digit or one end letter of the plate on the car differs from the order (`spec.PlateShown`; work order and scanner keep the real one) |
+| A2 | LowMileage | Vehicle / Common | Scanner odometer reads 18,000–42,000 km less than the order's mileage |
+| A3 | DifferentPerson | Customer / Uncommon | 10 s after sitting, when no player is within 20 studs, the customer's look changes (skin, shirt, trousers); if never unseen, it changes when called back. Same name |
+| A4 | WrongBody | Customer / Uncommon | No idle or walk animation (glides), and the head turns (up to 85°) to follow the nearest player within 45 studs. Stand-in for the mirrored walk / statue clips until the Mixamo export |
+| A5 | ShopReacts | Workshop / Uncommon | While they sit: the waiting-room clock runs backwards and the radio switches to static; back to normal when they stand |
+
+A3 and A4 conflict (never together).
+
+**New for this:**
+- `CustomerLooks` + `CustomerConfig.LOOKS`: every customer now gets a seeded look (4 skins, 6 shirts, 4 trousers), so a
+  face can be remembered (needed for A3).
+- `Office.WaitingProps`: a wall clock above the chairs (SurfaceGui hands, client `ClockController`) and a radio on the
+  table (Music = "The Saxophone Stayed Late" 109558786368038, Static = 8028069841, both load; EQ'd thin).
+- `WaitingRoomService`: shared clock (State `ClockAnchorTime/Seconds/Rate`, server time, so every client agrees), a true
+  forward clock for log times (`Minutes()`), radio music/static.
+- The shift log sent to clients has no Truth/Anomalies/Findings until the shift ends (they were readable before).
+  Log entries carry `Anomalies` and `Findings`. `Closed` is now the real shift clock (was the arrival time).
+- Ledger notes list each anomalous order ("Order 0001, Wenny Gunawan: a different person came back."); case file
+  Evidence shows "Irregularities", Notes lists the full reveal text.
+- Fixed: the ledger/case file showed "Green Green Sedan" (the log's Car already has the colour).
+- Test switches: `AnomalyConfig.TEST_ANOMALIES` / `TEST_INDEX` (both nil now).
+
+**Tested in solo Play:**
+- A1+A2+A4+A5 on customer 1: plate on car PT 2601 EN vs order PT 2691 EN; odometer 202,854 vs 228,978; no animation
+  tracks; seated → radio static, clock rate −1, second hand 24 → 12 over 2 s; head within 0.2–0.7° of the player
+  from two positions; call back → music and forward clock back, walked at 7 with no tracks.
+- Mid-shift client log had no Truth/Findings.
+- A3 in a 1-customer shift (CUSTOMERS was set to 1 for the test, back to 3): look 1-3-4 → 4-2-2 after 10 s out of
+  sight; quarantine → ledger "Anomaly" + finding note, case file CONTAINED + irregularity.
+- 10,000 picks: 60/40 one/two, Common ≈ 2.3× Uncommon, A3+A4 never together, anomalous customer evenly 1/2/3.
+- Console clean.
+
+**Not tested:** a full natural 3-customer shift with a random pick, the release path for an anomalous car
+(UNRESOLVED), A1/A2 seen in the 3D view (checked through data), how loud the radio is, 2+ players (stare picks
+the nearest), phone.
+
+## 2026-11-18: UI design system + pass 2 ✅ (solo Play-tested, not published)
+
+From the user's second reference sheet ("UI DESIGN SHEETS") and a phased brief. Analysis, tokens, type scale,
+audit and plan: [UI_DESIGN_SYSTEM.md](UI_DESIGN_SYSTEM.md). Still no "ANOMALY DETECTED" alert (sheet 9 ignored).
+
+**New shared pieces**
+- `ShopClient.UIFit`: one fit-to-screen rule for every modal (design size, floor 0.72, ceiling 1.15, margins incl.
+  separate top/bottom). Replaces the per-controller `fitScale` code in the report, work order and case file.
+- `ShiftShared.Money` is now "$152.00" everywhere (was "$152" in the report, "$0.00" in the HUD).
+- No GUI text below 13 design px left (checked by a sweep). At the 0.72 phone floor that is ≥ 9.4 pt; labels on the
+  ledger, work order and case file were raised to 14 (≥ 10 pt).
+
+**End of Shift** (`ShiftReportUI.Dim.Sheet`, rebuilt): printed ledger with letterhead (ring logo, JOTHEM AUTO REPAIR,
+SHIFT REPORT No. / closed time), END OF SHIFT, four summary boxes (completed jobs, total earned, reputation, unresolved
+cases; red when bad), a ruled service log (#, customer, vehicle colour + model, plate, condition, disposition,
+payment), shift notes written from the log, total payment, a rotated SHIFT CLOSED stamp, and under the paper OPEN CASE
+FILES + START NEXT SHIFT. Height follows the rows (no empty block). Server: `ShiftService` log entries gained Colour,
+ColourHex, Fault, Mileage, Arrived, Closed. "Unresolved" = anomalous car released.
+
+**Work Order** (`WorkOrderUI.Clipboard`, rebuilt): landscape 720×480 form on a dark clipboard with a brass clip.
+Letterhead + SERVICE ORDER No. 0001; left column facts (customer, vehicle, plate, mileage, arrived), complaint,
+requested service, findings; right column status stamp, boxed inspection checklist, repair tasks, disposition. Fits
+between the top-right HUD and the tool row (`ORDER_MARGIN_TOP/BOTTOM`); WorkOrderUI DisplayOrder 6 → 26 so it draws
+over the HUD. The decision panel was not changed.
+
+**HUD:** clock 30 bold, objective 16/17, cash in a framed box, tool slots 82×58 with 14/16 text,
+`HUD_REFERENCE_HEIGHT` 640 and floor 0.75. Top-right now has MENU beside PLAYERS (`TopRight.Buttons`).
+
+**Scanner:** device 660 wide with a side panel (4 hardware keys, PWR and DATA lamps; DATA is amber while scanning and
+green when done), larger readings (20) and labels.
+
+**Repair panel:** bigger labels, square info badge. **Players list:** hint 11 → 14, title 20.
+
+**CCTV (new):** `CCTVUI` + `CCTVController`. Monitor on the office counter (`Office.CctvMonitor`, prompt F / D-pad up,
+"Watch cameras"). Four fixed cameras in `ShopSetup.Markers.CCTV` (Cam01 Parking, Cam02 Service Bay, Cam03 Waiting
+Room, Cam04 Rear Entrance; attributes Label, Area, Order, FieldOfView). Grey grade `Lighting.CCTVGrade` (local),
+bezel, vignette, slow scan bar, burnt-in camera name, blinking REC, a running timestamp from the shift clock, camera
+list with keys. 1–4 / Q E / LB RB switch with a short black cut, Backspace / B / EXIT leave. Player controls are
+disabled while watching and restored after; the camera is held by a render step only while open.
+
+**Case File (new):** `CaseFileUI` + `CaseFileController`. Manila folder: index of case slips, paper sheet with
+CASE FILE #, status stamp, tabs Evidence (painted car photo in a ViewportFrame from `Shop.UIAssets.SedanPhoto`, a
+stripped copy of the Sedan; facts and observation), Records (ten fields) and Notes. A case = a quarantined car, plus
+any released anomaly once the shift ends. Status: UNDER REVIEW during the shift; after it CONTAINED, CLOSED (no anomaly)
+or UNRESOLVED. Opened from the ledger and the menu. Q/E tabs, Up/Down cases, Backspace closes.
+
+**Menu (new):** `PauseMenu` + `PauseController`. P / Select / MENU button. Resume, Controls (key list), Case Files,
+Leave Shift (confirm, then the player leaves the server). It says "THE SHIFT KEEPS RUNNING": nothing is paused.
+
+**Tested in solo Play (1222×591):** ledger with three entries (stats, red values, notes, totals), case file empty
+state and with two cases (evidence photo, records, notes, tab and case keys), live work order from a real customer and
+an injected verified order, HUD, scanner layout, all four CCTV cameras (Cam03 moved after it rendered inside a wall),
+leaving CCTV restores camera/HUD/grade, menu open/Controls/Case Files/Resume restores the HUD. Console clean.
+**Phone:** checked by calculation from each modal's real design size for 750×381: ledger, work order, case file and
+menu fit at ≥ 0.72 after trimming the ledger and folder. Not seen on a real phone. **Not tested:** gamepad, touch,
+2+ players, the Leave button (it kicks the player), the scanner reading layout during a real scan.
+
+## 2026-11-18: UI PRD pass 1 ✅ (solo Play-tested, not published)
+
+Built to the user's Workshop Industrial UI PRD ([UI_PRD.md](UI_PRD.md)). The user chose:
+- all 7 modules, in two passes (CCTV and Case File come in pass 2, after review)
+- no "ANOMALY DETECTED" banner
+- real tool selection
+- built UI rather than texture images
+
+Colours and fonts live in `ReplicatedStorage.Shop.UITheme`: PRD tokens; Oswald for display text, RobotoMono for
+technical data, Source Sans for body text, Special Elite for stamps.
+
+**Screens** (each one is a real instance tree in StarterGui; the old WorkOrderGui, GaugeGui, DecisionGui, ShiftHudGui,
+NoticeGui and ShiftReportGui are gone):
+- **MainHUD**:
+  - Top left: NIGHT SHIFT 01, the clock, and the OBJECTIVE with 2 lines. The first line follows the job ("Find the
+    fault…", "Replace the front right tire", "Call X back…"); the second always reads "Keep an eye on the workshop".
+  - Top right: cash ($0.00), JOB n/3 · REP, and a PLAYERS button on touch only.
+  - Bottom left: notices and a **custom interaction prompt** (all shop prompts are now Style Custom): a key box
+    (E / X / TAP), the action, the object, and a hold bar. Tap or click it to use it on mobile.
+  - Bottom right: the equipped tool and **tool row** 1 GAUGE · 2 SCAN · 3 JACK · 4 WRENCH (number keys, D-pad left/right,
+    or tap; picking the same tool again goes back to HANDS).
+  - Corners scale with screen height. The top corners and the prompt hide while the repair panel is open.
+- **WorkOrderUI**: a **service order** on a clipboard (J opens and closes it):
+  - Header: J mark, SERVICE ORDER, JOTHEM AUTO REPAIR.
+  - Order No., Arrived, Vehicle, Plate, Mileage, Customer.
+  - Complaint (in quotes) and requested service.
+  - **Inspection checklist:** each tire's pressure as it's measured, plus "Diagnostic scan DONE".
+  - Findings / diagnosis (keeps the original flat reading).
+  - Repair tasks (Replace X tire, Verify tire pressure), ticked as they're done.
+  - Disposition, and a rotated stamp (IN PROGRESS / DIAGNOSED / REPAIRED / CHECKED / RELEASED / QUARANTINE).
+  - The body scrolls, and the clipboard shrinks on short screens. It opens by itself only when a new order arrives or
+    the status changes, not on every pressure reading.
+  - The release decision moved in here as **FINAL DISPOSITION** (ORDER 0001, RELEASE / QUARANTINE / NOT YET, with
+    coloured top bars). RELEASE is faded out until the job is CHECKED.
+- **DiagnosticUI**:
+  - **JAS DIAGNOSTIC SCANNER**: dark device body, battery icon, green CRT screen.
+    - **VEHICLE STATUS** page: battery V, engine temp °C, oil pressure, electrical, fault codes.
+    - **VEHICLE DETAILS** page: vehicle, plate, VIN, odometer, modules.
+    - SCANNING… % progress, then SCAN COMPLETE. Buttons: F1 RESCAN, F2 DETAILS/SUMMARY, Backspace BACK (gamepad X/Y/B,
+      tap on touch).
+    - It closes when you walk 14 studs away. Rescans ask the server again, so M4 can change readings between scans.
+  - **DIGITAL TIRE GAUGE**: a handheld with a grey-green LCD, a big PSI number, a bar with the good band, a verdict,
+    and a status LED (red / green / amber).
+- **RepairUI** (was RepairWheelGui; the same game, restyled): a side panel with TIRE REPLACEMENT / STEP n/4, the 4
+  steps (OK / > / pending), a **TOOL** line ("JACK READY", or "USE THE WRENCH [4]" in amber, flashing red when you try
+  without it), progress, and the hint split into lines.
+- **ShiftReportUI**: the END OF SHIFT paper report (rows 01–03, totals, START NEXT SHIFT).
+- **CooperativeUI**: **PLAYERS (n/4)** with signal bars. Each row: headshot, name ("You"), Mechanic, a status dot
+  (green idle / amber busy / red down) and the activity ("Changing a tire", "Scanning vehicle"…) or the area ("In
+  Service Bay" / "In Office" / "In Waiting Room" / "In Parking"). Opened with Tab (the Roblox player list is turned off)
+  or the touch button.
+- DialogueGui was restyled to match (dark strip, amber speaker name).
+
+**Tools (PRD 7.5):**
+- **Server:** `ToolService` validates the `SelectTool` remote and sets the player attribute `Tool`.
+- **What needs which tool:**
+  - Check pressure: the gauge.
+  - Diagnostic scan: the scanner.
+  - Starting a new tire job: the jack.
+  - Pumping and lowering: the jack.
+  - Nuts: the wrench.
+  - Lining up the spare: no tool.
+- **Wrong tool:** the notice "Use the right tool: JACK [3]." The repair controller also checks on the client, so it
+  doesn't count a pump it would then have to take back.
+- **Activity:** `ToolService.SetActivity` sets the player attribute `Activity` for the players list.
+
+**Scanner on the server:**
+- New car attributes come from the spec: `Vin`, `Odometer` (the scanner's reading, normally the same as Mileage, so
+  M4's mileage anomaly can make them differ), `Battery`, `EngineTemp`, `OilPressure`, `Electrical`, `Modules`,
+  `FaultCodes` (JSON).
+- The port is `Sedan.Root.Scan.ScanPrompt` ("Plug in scanner / Diagnostic port"), at the **front of the car** with a
+  4.5-stud reach. At the door it lost to the wheel prompts, which use the same E key.
+- The `ScanRequest` remote handles rescans (it checks the car, the reach, the scanner tool and that the order is open).
+- The order records `Checked[wheel]`, `Scanned`, `FindingPsi`, `Repaired` and `Verified`.
+
+**Other:**
+- New remotes: `SelectTool`, `ScanRequest`, `ScanResult`.
+- The State attribute `CustomerWaiting` drives the "Talk to the customer" objective.
+- New: `Markers.Areas` (WaitingRoom / Office / ServiceBay / Forecourt boxes, non-colliding and non-queryable).
+- **Gotcha:** while they were queryable, they blocked prompts' line-of-sight. Keep marker boxes `CanQuery = false`.
+
+**Tested in solo Play** (Studio didn't draw the 3D world this session, so only the GUI was seen):
+- HUD, prompt and objective at every stage.
+- Wrong-tool notices for the gauge, jack and wrench.
+- Real number keys switch tools.
+- The gauge reading fills the checklist.
+- The scanner: progress, both pages, F1, F2, Backspace.
+- The repair driven with real Space presses for pumping and tool switches. Resuming after Backspace continues at
+  Align.
+- Task ticks and the CHECKED stamp, then call-back, disposition, release (with pay notice and cash), quarantine,
+  and the report.
+- Tab player list.
+- No errors.
+
+**Not tested:**
+- A real phone or tablet; the scaling is maths only so far.
+- Gamepad.
+- 2+ players in the list.
+- How it all looks over the actual lit 3D shop.
+
+## 2026-11-18: M3, a full shift + inspect and verify steps ✅ (solo Play-tested, not published)
+
+Added the GDD's **diagnosis** and **verification** steps, which the slice plan had skipped, as well as the M3 shift.
+
+**Flow per customer** (3 per shift):
+1. **Arrival:** a car drives in through the bay 1 door, then the customer gets out at the driver door (`Markers.DriverExit`)
+   and walks to the counter (route `FromCar`). The engine idle plays while the car moves.
+2. **Talk:** the same 4 lines as before. The complaint is now vague (pulling to one side, a thumping noise) and doesn't
+   say which tire. The work order has a new **FINDING** row, which shows "-" at this point. The customer sits down, and
+   their prompt becomes **"Call back"**.
+3. **Inspect:** every wheel's prompt reads **"Check pressure"** (hold 0.6 s).
+   - A gauge panel counts up to the reading over 1.4 s.
+   - Normal tires read 31–34.5 PSI, and the flat reads 3–9.
+   - Checking the flat sets FINDING to "Flat tire, rear left", changes the stamp to **DIAGNOSED** and shows the notice
+     "Found it…".
+   - The flat wheel is **random per car** (FL/FR/RL/RR).
+4. **Repair:** only after diagnosis does that wheel's prompt become **"Change tire"** (the M2 game). The stamp then
+   reads REPAIRED, with the notice "Tire changed. Check its pressure…".
+5. **Verify:** checking the new wheel shows 33 PSI. The stamp changes to **CHECKED**, with the notice "Repair checked. Call the
+   customer back…".
+6. **Call back:** the customer stands up, walks to the counter (route `ToCounter`) and asks "Is it done?". The
+   **decision panel** opens for the player who called them, and the work order card opens beside it.
+   - **RELEASE** works only once the job is CHECKED; before that it is greyed out ("Repair not checked yet"). The
+     customer pays $120 plus a $10–40 tip and walks back to the car. The car then reverses out and is removed.
+   - **QUARANTINE** is always available. The customer gets angry and walks out the front. The car fades out ("kept"). Pay
+     is $0, and reputation drops by 1 for a normal customer. M4 adds a bonus for anomalous ones.
+   - **NOT YET:** they go back to their chair, and "Call back" is offered again.
+7. After 3 customers the **END OF SHIFT** report shows every customer, plate, decision, WHAT IT WAS (always "Normal" until
+   M4), pay, total earned and reputation. **START NEXT SHIFT** runs a new one.
+- **HUD** (top left): clock · CUSTOMER n/3 · cash · REP, with a till sound when money comes in.
+- **Cars:** each one has a random plate (`AB 1234 CD`), colour (5 options), mileage (42k–236k), flat wheel and per-wheel
+  pressures. The hand-placed `Bay1Car` is gone; cars spawn from `ServerStorage.VehicleTemplates.Sedan`.
+
+**New / changed (all instances made in Studio):**
+- **Server** (`ServerScriptService.ShopSystem`):
+  - `ShiftConfig`: counts, timings, pay, colours, pressure ranges, decision reach and timeout.
+  - `ShiftService`: runs the night, writes State attributes `Shift` and `ShiftLog`, and listens for the `NewShift` remote.
+  - `OrderService`: reads and writes State `WorkOrder`.
+  - `DecisionService`: `Ask`/`Cancel`. The server checks the choice: RELEASE needs status Verified, and the player must be
+    alive and within 45 studs of the customer. Death, leaving or 90 s without an answer counts as NOT YET.
+  - `WorkshopService` was rewritten: prompt modes, the pressure check, diagnosis, verification.
+  - `VehicleService` gained `Spawn`, `Drive` (Heartbeat lerp; runs only while a car moves), `FadeOut`, `Pressure` and
+    `ClearRemoved`.
+  - `RepairService.StopCar`.
+  - `CustomerService` gained the call-back, decision and leave flow, and a stand-up fix (it destroys the `SeatWeld`;
+    `Humanoid.Sit = false` alone sometimes left them seated).
+  - `ShopServer` now just starts the services and the shift.
+- **Shared:** new `ReplicatedStorage.Shop.ShiftShared` (remote names, statuses, choices, pressure rules, all the new
+  text). In `WorkOrderConfig`, the complaints are vaguer. `RepairShared.TireChanged` was reworded.
+- **Remotes:** `TireReading`, `DecisionOpen`, `DecisionChoice`, `DecisionClose`, `NewShift`.
+- **Client:** new `GaugeController`, `DecisionController` and `ShiftController`. `WorkOrderController` gained the FINDING
+  row, new stamps and `Show()`. `RepairController` notices also look in `ShiftShared`.
+- **GUIs:** `GaugeGui`, `DecisionGui`, `ShiftHudGui` and `ShiftReportGui` (with a `RowTemplate`). `WorkOrderGui.Card` is
+  394 tall with the new `Finding` row.
+- **Markers:** `DriverExit`, plus the routes `FromCar`, `ToCounter` and `ToCar`. `Bay1CarSpot` is now exactly the
+  parked car's pivot.
+- **Sounds:**
+  - `Sedan.Root.EngineSound`: PSE 9113001368, "1991 Range Rover" idle, region 1–14 s.
+  - `GaugeGui.HissSound`: PSE 9113046623, an aerosol hiss.
+  - `ShiftHudGui.CashSound`: 134810204798705, a "Cash Register" sound by a non-PSE creator. Swap it if you'd rather not
+    use it.
+  - Wheel templates and `SpareWheel` have a `Pressure` attribute.
+
+**Tested in solo Play:**
+- One full shift of 3 customers:
+  - Customer 1: diagnosed the front left, repaired it, checked it, and released (real mouse click). $145.
+  - Customer 2: diagnosed only. RELEASE was locked, and clicking it did nothing. NOT YET sent them to their chair. A
+    second call-back worked, then QUARANTINE (real click). REP −1, they walked out, and the car faded.
+  - Customer 3: released. The report showed the right rows and totals, and START NEXT SHIFT (real click) began shift 2
+    with a new car.
+- The repairs were driven by firing the real `RepairAction` reports, not by mouse. The minigame was already tested by
+  hand in M2.
+- No errors in the output.
+
+**Not tested / known:**
+- Co-op (two players at once), phone and gamepad.
+- The car moves by CFrame and doesn't push players: someone standing in the bay doorway as it drives in would be
+  clipped.
+- Cars arrive with their headlights off, so they're a dark shape.
+- A quarantined car just fades away.
+
+## 2026-11-18: M2, tire repair ✅ (solo Play-tested, not published)
+
+Ported from ANMU Chapter 2's FIT THE WHEEL (read from the open PUBLIC Chapter 2 Studio; nothing there was changed).
+The ANMU story, inventory and monster-noise hooks were dropped.
+
+**Flow:**
+1. Once the customer has handed over the keys, the flat wheel's **"Change tire"** prompt switches on (hold E 0.4 s).
+2. **Jack:** pump with Space, click, tap or A in rhythm, 6 pumps. The car really tilts up on a scissor jack for
+   everyone. At the top the flat comes off and lies on the floor beside the car.
+3. **Line up the spare:**
+   - The spare hangs in front of the hub and sways.
+   - Move it with the mouse, finger, WASD or the left stick. Turn it with scroll, Q/R, LB/RB or the on-screen
+     < > buttons.
+   - Hold the orange hole marks on the white stud marks for 0.8 s.
+4. **Nuts**, in star order 1-3-5-2-4:
+   - Move onto the glowing nut, then circle it clockwise for 2 turns.
+   - Too fast and the wrench slips with a clang. The nut keeps its progress.
+   - When the last nut is tight, the real new wheel appears on the car.
+5. **Lower:** press Space, A or the FINISH button. The car comes down level, the jack clears 2.5 s later, and the work
+   order stamp changes **OPEN → REPAIRED**.
+- **Co-op:** a second player using the prompt during a job holds the tire. While they hold, the sway is 30% and
+  each nut needs 60% of the turns. Ported but **not tested** (needs 2 players).
+- **Giving up** (Backspace, B, the X button, or walking 14+ studs away):
+  - Before the flat is off, the car drops back onto the flat.
+  - After it's off, the car stays on the jack, and the next attempt resumes at the stage it reached.
+
+**Car changes:**
+- **Template `Sedan`:**
+  - The body and plates are now welded to the anchored `Root`, so tilting `Root` tilts the whole body. Wheels stay
+    separate and anchored.
+  - Per wheel (FL/FR/RL/RR) there are attachments on `Root`: `Hub_XX` (the wheel centre, LookVector outward, with an
+    ObjectValue `Wheel`), `Jack_XX`, `Contact_XX` (where the tire touches the ground) and `Prompt_XX` with a
+    disabled `WheelPrompt`.
+  - New `Hubs` folder: a brake rotor, flange, 5 studs and a cap behind each wheel, seen when a wheel is off.
+  - **Wheel models' pivot = their hub frame.** A leftover PrimaryPart offset had them turned 90°; that is fixed.
+- `Workspace.Vehicles.Bay1Car` is a fresh copy of the template. **The flat is no longer posed by hand:**
+  `ShopServer` calls `VehicleService.SetFlat(car, "FL")` at start (`CustomerConfig.FAULT_WHEEL`). In Edit the car
+  looks healthy; the flat appears in Play.
+
+**New instances:**
+- `ServerStorage.RepairTemplates.CarJack`: a scissor jack built from parts. Its `Saddle` holds the PSE sounds
+  Pump, Clunk, Clang and Lower.
+- `ReplicatedStorage.Shop.RepairAssets`: `Nut`, `Wrench`, `HoleMark`, `StudMark`, `NutGlow` (Highlight), `Lamp`, and
+  `SpareWheel` (a healthy wheel whose pivot is its hub frame).
+- `ReplicatedStorage.Shop.Remotes`: `RepairStart`, `RepairAction`, `RepairUpdate`, `RepairStop`, `RepairNotice`.
+- `StarterGui.RepairWheelGui` (AimArea, Marker ring, Panel with Title/Bar/Percent/Hint, CloseButton,
+  TurnLeft/Right, Helper, FinishButton with a keycap, Wrench/Tight/Slip sounds) and `StarterGui.NoticeGui`.
+
+**Scripts:**
+
+| Script | Job |
+|---|---|
+| `ReplicatedStorage.Shop.RepairShared` | All game rules and numbers (pumps, align tolerances, nut order/turns, slip speed), sway formula, all wording |
+| `ServerScriptService.ShopSystem.VehicleConfig` | Lift height (0.45 studs), flat drop (0.27), flat tire / bulge sizes, attachment names |
+| `ServerScriptService.ShopSystem.VehicleService` | Car state: `Prepare`, `SetLevel` (tilt about the opposite wheel's contact), `SetFlat`, `RemoveWheel` (lays it on the floor), `FitWheel` |
+| `ServerScriptService.ShopSystem.RepairConfig` | Jack timing, sync intervals, reach / stop distance |
+| `ServerScriptService.ShopSystem.RepairService` | Sessions, jack posing and lifting, judging every report (the client never decides a result), helper, resume after giving up |
+| `ServerScriptService.ShopSystem.WorkshopService` | Hooks each car's wheel prompts. A prompt is on only with an order and a wheel that needs work. On a win it marks the order Repaired |
+| `StarterPlayerScripts.ShopClient.RepairController` | Routes start/update/stop to the game's controller; shows notices |
+| `StarterPlayerScripts.ShopClient.RepairWheelController` | Camera, spare/nuts/wrench drawing, input, prediction. Hides your body, the work order card and dialogue while open |
+
+**Improvement over the ANMU version:** seating the wrench and every turn report carry the nut number. The server
+acknowledges seating, ignores reports for an old nut, and the client asks to resync if no answer comes within 1 s.
+This is the "stuck between bolts" problem from ANMU §5bb.
+
+**Tested in solo Play:**
+- Whole job by real keyboard and mouse input: 6 pumps → wheel off and on the floor; mouse onto the hub + scroll →
+  lined up; mouse circles → all 5 nuts; Space → lowered.
+- After the job: all 4 tires on the floor (y 0.20), car level, order Repaired, prompt off, jack gone, camera / FOV /
+  HUD / mouse / body restored, card shows REPAIRED.
+- Slip: two fast turn reports → slipped, notice shown, progress kept.
+- A stale report for an already-finished nut was ignored.
+- Giving up at the Jack stage → back on the flat. Giving up at Align → stays jacked, and restarting resumes at Align.
+- No errors.
+
+**Not tested:**
+- Two players (helper, watching the jack lift).
+- Phone (drag, < > buttons, finger circles) and gamepad (stick circles).
+- Whether a real mouse's circling speed feels right against the slip limit.
+- The walk-away cancel.
+
+**Known looks to tune:** the jack is small next to this car (ANMU scale); the removed flat lies close to the
+camera in the Lower view.
+
+## 2026-11-18: M1, customer + work order ✅ (solo Play-tested, not published)
+
+**Flow:**
+1. About 4 s after the first player spawns, a customer appears on the forecourt.
+2. They walk in through bay 1 to the front counter and wait. Their Talk prompt (E) switches on.
+3. Talking plays 4 lines. The speaker shows as "CUSTOMER" until they say their name.
+4. With "Here are the keys", the **work order card** slides in on the right with name, plate, vehicle, mileage and
+   complaint.
+5. They walk to the waiting corner and sit in the first free chair.
+
+**Instances:**
+- `Workspace.ShopSetup.Office`:
+  - `Counter`, the front counter at z ≈ 45.5, next to bay 1 (customer side z > 46).
+  - `Waiting`: chairs `Chair1–3` are real Seats with the attribute `CustomerSeat`, plus a table.
+- `Lights.OfficeTube` and `Lights.WaitingTube`, two new tubes over the counter and the chairs.
+- `Markers.CustomerRoutes`: folders `Arrive`, `ToWaiting` and `Leave`, each holding numbered invisible points. The
+  customer walks them in order. The last `Arrive` point's facing is where they look while at the counter. **Move
+  these points if the building changes.**
+- `Markers.Bay1CarSpot.Vehicle`, an ObjectValue pointing at the car this customer owns.
+- `Workspace.Customers`, the folder customers spawn into.
+- `ServerStorage.CustomerTemplates.StandIn`:
+  - A plain R15 stand-in with an `Animations` folder (Walk, Idle, Sit, all Roblox defaults) and a
+    `HumanoidRootPart.TalkPrompt`.
+  - **Placeholder until the Mixamo customers are imported.** The code only needs a Humanoid, a HumanoidRootPart
+    with a `TalkPrompt`, and an `Animations` folder with Walk, Idle and Sit.
+- `StarterGui.DialogueGui` (`Box` with `Speaker` and `Line`) and `StarterGui.WorkOrderGui` (`Card` with `Fields`
+  rows Customer/Plate/Car/Mileage/Complaint, `Tab`, `CloseButton` and `PaperSound`).
+- `ReplicatedStorage.Shop`:
+  - `Remotes.Dialogue`, a RemoteEvent, server → all clients: (speaker, text, seconds).
+  - `State`, whose `WorkOrder` attribute holds the current order as JSON. Clients read it, so late joiners see it too.
+- Car attribute `ModelName` = "Sedan"; the car gets `OrderId` when the keys are handed over.
+
+**Scripts** (no comments, per your Roblox rule):
+
+| Script | Job |
+|---|---|
+| `ReplicatedStorage.Shop.WorkOrderConfig` | Name lists, complaint lines per fault, shift start time 23:40, minutes per order |
+| `ReplicatedStorage.Shop.WorkOrderShared` | Builds a work order from a seed + the car's attributes; JSON encode/decode; formatting |
+| `ServerScriptService.ShopSystem.CustomerConfig` | Walk speed, line timing, the conversation lines (`{Customer}`, `{Complaint}` are filled in) |
+| `ServerScriptService.ShopSystem.CustomerService` | `Arrive()`: spawns, walks routes, talk prompt, conversation, issues the order, sits. Animations follow `Humanoid.Running` / `Seated` events (no polling). `Remove(customer)` cleans up connections |
+| `ServerScriptService.ShopSystem.ShopServer` | Starts the first customer once a player has spawned |
+| `StarterPlayerScripts.ShopClient.DialogueController` | Typewriter dialogue box |
+| `StarterPlayerScripts.ShopClient.WorkOrderController` | Card slide in/out, J or gamepad Y to toggle (bound only while there is an order), tab and × buttons for touch, scales down on small screens |
+| `StarterPlayerScripts.ShopClient.ShopClientConfig` | Typing speed, toggle keys, card animation and scale numbers |
+
+**Tested in solo Play:**
+- The customer walked the whole route, with walk/idle switching as they moved and stopped.
+- The prompt switched on at the counter, and pressing it played all 4 lines.
+- The card appeared together with the keys line and filled in correctly: random name, plate `KR 4471 ZN`, Maroon
+  Sedan, 148,230 km, complaint.
+- The car got its `OrderId`.
+- The customer sat in Chair1 with the sit animation.
+- J put the card away (tab shown) and brought it back.
+- No errors.
+
+**Not tested:** phone (the × button, the tab, card scale), gamepad Y, two players.
+
+## 2026-11-18: M0, night shop with one car ✅ (solo Play-tested, not published)
+
+**Fixed in your building:** 166 of its parts were unanchored with no welds, so the whole building would have fallen
+apart in Play. All anchored now. Nothing else of yours was renamed, moved or deleted, except the spawn (below).
+
+**Added (everything is in `Workspace.ShopSetup`, so it is easy to find or remove):**
+- `Structure`:
+  - `ShopFloor`: concrete floor inside.
+  - `Forecourt`: an asphalt apron in front of the bays.
+  - `Roof`: a corrugated metal sheet over the trusses at y 33.5. Without it the inside was open to the sky.
+  - `BayLines`: yellow lines between the bays, with painted numbers 1–3.
+- `Lights`:
+  - Fluorescent tube fixtures hanging from the roof: two bright ones over bay 1, one dimmer one over each of
+    bays 2 and 3, one over the rear.
+  - An orange sodium lamp over each bay door.
+  - `YardPole`, a sodium pole light on the forecourt.
+  - Only `Bay1TubeFront` and `YardPole` cast shadows, to keep phones fast. Each tube model has a
+    `BaseBrightness` attribute, so a later flicker anomaly has a value to return to.
+- `Markers.Bay1CarSpot`: an invisible marker where the customer car parks in bay 1, facing in.
+
+**Lighting:**
+- ClockTime 23.5, dark blue ambient.
+- Atmosphere fog (density 0.4, haze 2.2), SunRays off, Bloom toned down.
+- New `NightGrade` ColorCorrection: saturation −0.3, contrast +0.12, slightly green tint.
+- The PS1 look still needs low-res textures; Roblox has no vertex-jitter shader.
+
+**Car:**
+- `ServerStorage.VehicleTemplates.Sedan`, built from the free Creator Store model 108398927073330 (a boxy 80s sedan
+  with separate wheels).
+  - **That model hid scripts** (`BloomDefect`, `Shifter.PoseLink`, a typical backdoor), and so did the other
+    candidate (71641105057134). All scripts were deleted; only meshes and unions are kept.
+- Layout:
+  - `Root` is the invisible PrimaryPart; the pivot is at ground level under the car's centre.
+  - `Body` contains `Paint`, `Trim`, `Glass`, `Underbody`, `Headlights`, `Taillights` and `Grille`.
+  - `Wheels` contains `WheelFL`, `WheelFR`, `WheelRL` and `WheelRR`. Each has a `Tire`, a `Rim`, a `Hub` attachment
+    on the tire pointing outward, and a `Flat` attribute.
+  - `PlateFront` and `PlateRear` each have a SurfaceGui with an `Arcade`-font number.
+  - Attributes on the model: `Plate`, `Mileage`, `ColorName`. The work order will read these.
+- `Workspace.Vehicles.Bay1Car` is the placed copy, plate `KR 4471 ZN`.
+  - Its **front-left tire is flat**: the tire is squashed, there is a `Sag` bulge at the bottom (a squashed tire
+    mesh copy), the rim sits low, and the body leans about 0.3 studs toward that corner.
+  - This pose was set by hand for M0. M3's VehicleService should apply the flat from config instead, and the
+    placed copy can then go.
+
+**Spawn:** `Workspace.SpawnLocation` moved from the world origin to the forecourt (-58, 0.3, 74), facing the
+shop, and made invisible and non-colliding.
+
+**Tested in solo Play:**
+- The building stands.
+- The car is in bay 1 with all four tires on the floor (y 0.2).
+- The plate is readable from the door.
+- No console errors.
+
+**Not tested:** phone brightness and performance, and how dark it reads on low graphics settings.

@@ -27,3 +27,4 @@ shared memory, kept in sync with https://github.com/SyuQyu/anomaly-docs. Read [R
 - Never write code comments. Make GUI and other instances as real instances in Studio; code clones templates.
 - Tunables go in config ModuleScripts. Server is authoritative. Phones are the limiting device.
 - Read a script right before editing it: teammates edit the same place.
+

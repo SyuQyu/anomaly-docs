@@ -2,6 +2,24 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-22 (Aizu + Claude): retail shop, stock, free decoration, build mode (Gameplay 82609083848662, not published)
+
+Full detail, data layout and the test table: **[RETAIL_DECOR_HANDOFF.md](RETAIL_DECOR_HANDOFF.md)**.
+
+- **Retail:** supplies aisle with 5 shelves west of the bays; shoppers (4 profiles) browse real shelf stock, carry a
+  basket, queue at the same till as service customers and are served with *Ring it up / Refuse*. Hybrid: service
+  customers may add shelf items to their repair bill.
+- **Stock:** backroom (supplier orders, SUPPLIER tab), display (shelf slots, Restock prompt with +1 / FILL), repair
+  reserve (`Workshop.Stock`, untouched by retail). Reservations prevent double-selling; payment settles once.
+- **Decoration:** DECOR tab (32 items), build mode on **B** with green/red ghost, rotate, snap, move, store, per-object
+  locks, server path check so furniture can't block customers. Appeal / comfort / light have gameplay effects.
+- **Anomalies:** 17 retail events in `RetailAnomalyCatalog`, merged into the existing Director (shopper, product,
+  cashier and CCTV-only); 3 of them lock the till with the basket kept.
+- **✅ Play-tested solo:** spec tests 01–13, 17, 18 (see the handoff). Tests 14 and 15 only simulated (JSON round trip,
+  fake lock owner). Test 16 (4 players), phones, gamepad and a real DataStore rejoin **not tested**.
+- Fixed while testing: queue thread crash (would have soft-locked the shift), ghost highlight not rendering, PLACE
+  button dragging the ghost on PC, hybrid picking empty shelves, basket angle.
+
 ## 2026-11-22 (SyuQyu + Claude): full-screen CCTV with map buttons and look controls (Gameplay 82609083848662, not published)
 
 - **CCTV is now full screen** (horror-cam style, in our monochrome look). `StarterGui.CCTVUI.Screen`: `Feed` (camera

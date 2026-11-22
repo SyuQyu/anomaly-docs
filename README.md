@@ -10,6 +10,8 @@ Read in this order:
 4. [GAMEPLAY_LOOP_HANDOFF.md](GAMEPLAY_LOOP_HANDOFF.md): the full loop from the master implementation prompt
    (arrival, dialogue, bays, battery/radiator repairs, cashier tray, Anomaly Director, tycoon, staff,
    countermeasure), with the tested / not tested / blocked report.
+5. [RETAIL_DECOR_HANDOFF.md](RETAIL_DECOR_HANDOFF.md): retail shoppers, backroom / shelf / repair stock, supplier and
+   restock, free decoration and build mode, 17 retail anomalies, test results.
 
 Also here (added 2026-11-21):
 

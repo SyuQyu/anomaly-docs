@@ -2,6 +2,27 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-22 (SyuQyu + Claude): full-screen CCTV with map buttons and look controls (Gameplay 82609083848662, not published)
+
+- **CCTV is now full screen** (horror-cam style, in our monochrome look). `StarterGui.CCTVUI.Screen`: `Feed` (camera
+  name, timestamp under it, REC, scanlines, vignette, switch flash) fills the screen; `MapPanel` bottom right (site
+  map, click a CAM tag to switch); `Pan.Left/Right/Up/Down` buttons on the edges (hold to look); `BottomLeft` has EXIT,
+  LOG (pop-up event log) and the key hint. Every group has a `UIScale` named `Fit` set from the screen height
+  (`CCTV_UI_REFERENCE_HEIGHT` 900, min 0.65, max 1.25).
+- Removed: the desk layout (camera list, controls panel, note, header, `CamTemplate`, `CCTV_DESIGN` and its config).
+  Old desk kept in `ServerStorage.UILegacy` (`CCTV_Desk_2026-11-22`, `CCTV_CamTemplate_2026-11-22`); delete when
+  nobody needs it.
+- Keys: Q / E or LB / RB or 1–4 switch camera; W A S D, arrows, D-pad look; L / Y log; R recording; Backspace / B exit.
+  Arrows and D-pad left/right used to switch camera and now look around.
+- Look limits per camera: marker attributes `PanYaw` / `PanPitch` (defaults `CCTV_PAN_YAW` 40, `CCTV_PAN_PITCH` 18),
+  speed `CCTV_PAN_SPEED` 50 °/s. Each camera remembers where it was pointed. Wording in `ShiftShared.COPY.Cctv`
+  (`Exit`, `Log`, `Pan`, `Hint*`; the desk-only strings were removed).
+- `CctvAnomalyController` untouched: it still gets `Show(marker)` on every switch, so CCTV-only anomalies keep working.
+- **✅ Play-tested solo (PC):** opens from the monitor; W A S D panned ~40° / ~15° and stopped at the limits while the
+  character stayed put; holding ◀ with the mouse panned and stopped on release; clicking CAM 03 on the map switched;
+  L opened the log; Backspace restored the normal camera and movement. Layout checked at 576, 720 and 1080 px tall.
+- **Not tested:** phone touch on the pan buttons and map, gamepad, CCTV-only anomalies with a turned camera.
+
 ## 2026-11-20 → 21 (SyuQyu + Claude): cars, customer cars, office, shop front, paper notice, HUD fix (Gameplay 82609083848662 + Lobby 111351856377896, not published)
 
 Written up on 2026-11-22; the work itself came before Aizu's gameplay-loop entries below. Full detail:

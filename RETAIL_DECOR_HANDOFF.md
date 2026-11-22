@@ -194,7 +194,9 @@ Furniture placement now changes how shoppers behave, with every effect visible i
   - Seats: WAITING SEAT / SEAT UNREACHABLE.
   - Other furniture: its function.
 
-  The tray shows "SHELVES REACHABLE n/m". Template: `ReplicatedStorage.Shop.LayoutAssets.ShelfStatus` (BillboardGui).
+  The tray shows "SHELVES REACHABLE n/m". Template: `ReplicatedStorage.Shop.LayoutAssets.ShelfStatus` (BillboardGui,
+  sized in studs). Build mode, the shop terminal and Restock all use the monochrome panel/button recipe (see
+  PROGRESS 2026-11-22 "restyled"); keep new screens on that recipe and `ZIndexBehavior = Sibling`.
 - **Saved state:** entries gain `Owner` (UserId of the buyer). Stock, product assignment and storage bonus stay with
   the entry through move, store and re-place. Upgrade level is shop-wide (rack level), not per object.
 

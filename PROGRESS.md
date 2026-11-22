@@ -2,6 +2,36 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-22 (Aizu + Claude): build mode, shop terminal and restock restyled to the monochrome UI (Gameplay 82609083848662, not published)
+
+These screens were still in the old olive/amber look. They now follow the monochrome UI pass (as `RepairUI` / `MainHUD`):
+
+- **Panels:** `191916` at 0.12 with tiled grain `99310308346139` and 9-slice panel frame `104888855026335`
+  (40,40,472,472, scale 0.6), plus a `373734` header bar with a Merriweather title.
+- **Buttons:** button frame `82209239162563` (14,14,114,50) plus grain. Light `d3d3d0` keycaps.
+- **Text:** greys only. RobotoMono for numbers, SourceSans for prose.
+
+What changed on each screen:
+
+- **`BuildModeUI`:**
+  - Banner: header with title + item name; the status line got a small LED (green/red is kept as an instrument colour).
+  - The key hint is a row of keycaps, shown only with a keyboard.
+  - Tray has a header strip; slots use the button style with a white outline on the selected one.
+  - Side buttons have a keycap + `Label` child (the controller now sets `Snap.Label.Text`).
+- **`LayoutAssets.ShelfStatus`:** sized in studs (5.6 × 2.4), so labels shrink with distance instead of piling up.
+  LED + short title (REACHABLE / BLOCKED / NO WAY IN / NO WAY TO TILL), two short lines (door / till distance;
+  spots · seen · lit).
+- **`WorkshopShopUI`, `RestockUI`:**
+  - Same panel recipe; tabs, close and buy buttons framed.
+  - ZIndexBehavior changed Global → Sibling, so the frame/grain layers draw.
+  - Tabs 96 wide so all 7 fit the panel.
+- Code: `BuildModeController` (LED, item label path, keycap labels, slot outline refresh on select/cancel);
+  `LayoutConfig` (shorter label text, grey function LED).
+- **✅ Checked in solo Play at 1222×591:** build mode idle and placing (LED green/red), shelf labels (with
+  AlwaysOnTop switched off on the live copy, because Studio screenshots skip always-on-top billboards), DECOR tab,
+  Restock window.
+- **Not checked:** phone sizes, gamepad, the tab row after the 96-px change.
+
 ## 2026-11-22 (Aizu + Claude): layout drives the shop: shelf access, functional furniture (Gameplay 82609083848662, not published)
 
 Detail: **[RETAIL_DECOR_HANDOFF.md](RETAIL_DECOR_HANDOFF.md) → "Layout drives the shop"**.

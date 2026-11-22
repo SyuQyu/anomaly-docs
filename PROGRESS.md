@@ -6,9 +6,10 @@ Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLI
 
 - **CCTV is now full screen** (horror-cam style, in our monochrome look). `StarterGui.CCTVUI.Screen`: `Feed` (camera
   name, timestamp under it, REC, scanlines, vignette, switch flash) fills the screen; `MapPanel` bottom right (site
-  map, click a CAM tag to switch); a D-pad `MapPanel.DPad.Left/Right/Up/Down` right next to the map (hold to look; moved off the screen edges on request); `BottomLeft` has EXIT,
-  LOG (pop-up event log) and the key hint. Every group has a `UIScale` named `Fit` set from the screen height
-  (`CCTV_UI_REFERENCE_HEIGHT` 900, min 0.65, max 1.25).
+  map, click a CAM tag to switch); `LookPad` bottom left = four keycap buttons laid out like keyboard arrow keys
+  (↑ on top, ← ↓ → below; hold to look, the arrow lights up while held, colour = button attribute `PressedColor`);
+  `TopRight` (under REC) has EXIT, LOG (pop-up event log below) and the key hint. Every group has a `UIScale` named
+  `Fit` set from the screen height (`CCTV_UI_REFERENCE_HEIGHT` 900, min 0.65, max 1.25).
 - Removed: the desk layout (camera list, controls panel, note, header, `CamTemplate`, `CCTV_DESIGN` and its config).
   Old desk kept in `ServerStorage.UILegacy` (`CCTV_Desk_2026-11-22`, `CCTV_CamTemplate_2026-11-22`); delete when
   nobody needs it.

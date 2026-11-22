@@ -5,11 +5,12 @@ Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLI
 ## 2026-11-22 (SyuQyu + Claude): full-screen CCTV with map buttons and look controls (Gameplay 82609083848662, not published)
 
 - **CCTV is now full screen** (horror-cam style, in our monochrome look). `StarterGui.CCTVUI.Screen`: `Feed` (camera
-  name, timestamp under it, REC, scanlines, vignette, switch flash) fills the screen; `MapPanel` bottom right (site
-  map, click a CAM tag to switch); `LookPad` bottom left = four keycap buttons laid out like keyboard arrow keys
-  (↑ on top, ← ↓ → below; hold to look, the arrow lights up while held, colour = button attribute `PressedColor`);
-  `TopRight` (under REC) has EXIT, LOG (pop-up event log below) and the key hint. Every group has a `UIScale` named
-  `Fit` set from the screen height (`CCTV_UI_REFERENCE_HEIGHT` 900, min 0.65, max 1.25).
+  name, timestamp and REC stacked top left, scanlines, vignette, switch flash) fills the screen; `MapPanel` bottom
+  right (site map, click a CAM tag to switch); `LookPad` bottom left = four 72 px buttons in the normal panel style
+  (grain + metal frame, ▲ ◀ ▼ ▶) laid out like keyboard arrow keys (▲ on top, ◀ ▼ ▶ below; hold to look, the arrow
+  lights up while held, colour = button attribute `PressedColor`); `TopRight` in the very top corner has LOG, EXIT,
+  the key hint under them and the pop-up event log below. Every group has a `UIScale` named `Fit` set from the screen
+  height (`CCTV_UI_REFERENCE_HEIGHT` 900, min 0.65, max 1.25).
 - Removed: the desk layout (camera list, controls panel, note, header, `CamTemplate`, `CCTV_DESIGN` and its config).
   Old desk kept in `ServerStorage.UILegacy` (`CCTV_Desk_2026-11-22`, `CCTV_CamTemplate_2026-11-22`); delete when
   nobody needs it.

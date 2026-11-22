@@ -2,6 +2,38 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-20 → 21 (SyuQyu + Claude): cars, customer cars, office, shop front, paper notice, HUD fix (Gameplay 82609083848662 + Lobby 111351856377896, not published)
+
+Written up on 2026-11-22; the work itself came before Aizu's gameplay-loop entries below. Full detail:
+**[GAMEPLAY_SHOP_HANDOFF.md](GAMEPLAY_SHOP_HANDOFF.md)**.
+
+- **Test cars:** BMW 3 Touring, Mercedes SLK 55 (Forza 7 rip) and Toyota Camry split in Blender (doors, hood, boot,
+  separate lights, tyre/rim), exported to `assets/anomaly_*_test` (local, not in this repo). Test only.
+- **Customer cars ✅ Play-tested solo:** templates `ServerStorage.VehicleTemplates/Estate`, `Roadster`, `Saloon`
+  (Sedan contract: `Root` + hub/jack/contact/prompt attachments, `Wheels`, welded `Body`). `ShiftConfig.VEHICLE_TEMPLATES`
+  random pick, 10 colours; paint = parts with attribute `Paint`, plates = every `PlateGui`. `VehicleService.FitWheel`
+  uses the car's own wheel. Glass = lobby van look (transparency 0.75). EU plates also on the lobby vans.
+- **Office restored ✅:** `Workspace.ShopSetup.Office` was in ServerStorage after the map swap (shift could not start).
+  Chairs sit invisibly on the map's own bench seats; clock, radio, CCTV monitor placed; old visuals in
+  `ServerStorage.OfficeLegacy`.
+- **Shop front:** `ShopFrontService` + `ShopFrontConfig`. Shutters are the map's own parts tagged `ShopShutter`
+  (the six `Garage.Rolling.RollingGate` strips = group `Bays`, `Workspace.WindowShutter` = group `Window`); they open
+  and close by stretching along their own Y axis (attributes `OpenSize`, `ClosedSize`, `FixedSide`, `StartOpen`).
+  Panel `Front.ShutterPanel` (BAYS / WINDOW buttons, lamps), office door `Front.OfficeDoor` (hinge away from the
+  handle, swings into the hallway). Bays start open, window closed; the first customer waits for both; bays and
+  window lock while a customer is in. **Tested:** panel prompts, door, lock, shift waiting for the window (on the
+  earlier curtain version). **Not tested in Play:** the final stretch-the-strips version (Studio previews of open and
+  closed only; the MCP play button got stuck).
+- **Night notice as paper ✅:** `BriefingUI.Dim.Sheet.PaperHolder` (aged paper 9-slice, tape, shadow, coffee ring),
+  textures generated procedurally, provenance in the GUI attribute `TextureProvenance`.
+- **HUD auto-size fix (the prompt bar that kept stretching):** decorations in auto-sized boxes are now direct
+  children at exactly `(1,0,1,0)`, padding on an inner element, no nested scale frames. `BottomLeft.Notice` and
+  `TopRight.Cash` are now `Frame` + `Label`; `TopLeft.ShiftBox` labels are in `Body`; the prompt `Fill` is a direct
+  child (`PromptController` reads its height from the template). ✅ Verified in Studio edit mode (boxes grow and
+  shrink, prompt stays 104 px while the hold bar fills); **not checked in Play**. Lobby HUD not scanned yet.
+- **Open:** check the shutters and the HUD in Play; scan `LobbyHud` for the same auto-size pattern; radio loudness
+  (it plays at 0.45 within 40 studs: louder or silent?); replace or license every test car before publishing.
+
 ## 2026-11-22 (Aizu + Claude): master gameplay prompt finished, phases 6–8 (Gameplay place 82609083848662, not published)
 
 Final delivery report (what is tested, what isn't, what is blocked): **[GAMEPLAY_LOOP_HANDOFF.md](GAMEPLAY_LOOP_HANDOFF.md)**.

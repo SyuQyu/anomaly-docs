@@ -7,6 +7,9 @@ Read in this order:
    ProfileStore data, monochrome UI, test van, open items.
 3. [GAMEPLAY_SHOP_HANDOFF.md](GAMEPLAY_SHOP_HANDOFF.md): test cars, customer cars with random paint and plates,
    office restored, shop front (shutters, door, control panel, open-the-shop start), paper notice, HUD auto-size fix.
+4. [GAMEPLAY_LOOP_HANDOFF.md](GAMEPLAY_LOOP_HANDOFF.md): the full loop from the master implementation prompt
+   (arrival, dialogue, bays, battery/radiator repairs, cashier tray, Anomaly Director, tycoon, staff,
+   countermeasure), with the tested / not tested / blocked report.
 
 Also here (added 2026-11-21):
 

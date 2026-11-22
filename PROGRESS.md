@@ -2,6 +2,172 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-22 (Aizu + Claude): master gameplay prompt finished, phases 6–8 (Gameplay place 82609083848662, not published)
+
+Final delivery report (what is tested, what isn't, what is blocked): **[GAMEPLAY_LOOP_HANDOFF.md](GAMEPLAY_LOOP_HANDOFF.md)**.
+
+- **Countermeasure (TEST 09) ✅ Play-tested solo:** before purchase G is not bound and the server answers
+  `CounterLocked`; bought at the rack ($600) → G / R1 / touch SHOVE bound; real G press 6 studs in front of a forced
+  Lurker → "It staggered back.", Lurker anchored for the stun, then removed (recorded "Repelled by the
+  countermeasure"); second press → cooldown notice. Note: a Lurker within 3.4 studs grabs at once (2.5 s stun), so the
+  shove must land before it reaches you.
+- **Radiator procedure ✅:** rack II + radiator bought → Overheating car (118 °C, P0217) → scan → 6 steps
+  (jack up 0.5 studs, wrench ×2, fit radiator: stock 1 → 0, wrench, jack down) → 89 °C, codes clear → rescan Verified.
+- **Full natural shift ✅ (3 customers, Overheating forced, customer 1 anomalous):** anomalous customer's tray locked
+  at the window by itself (WrongCustomerRecord fired at the counter), greyed RELEASE click did nothing, QUARANTINE →
+  tray closed, $0, customer walked out. Customers 2 and 3 released and paid ($227, $200; tray Open → Closing → Closed).
+  Shift ended: report with 3 jobs, $427, the quarantined anomaly and its findings in the notes, wages 0 (no staff),
+  bank saved in the state (1017).
+- **Fixed: customers stuck on the waiting-room bench.** `standUp` cleared `Sit` but the bench `Seat` grabbed the
+  customer again on touch, and `goTo` reported success anyway, so the cashier talk played from the bench and a
+  quarantined customer never left. `CustomerService.standUp` now disables that seat for `CustomerConfig.SEAT_REARM_SECONDS`
+  4 (re-enabled before anyone sits); `goTo` re-paths up to `PATH_RETRIES` 2 when `STUCK_STEPS` 2 steps in a row fail,
+  and stands the customer up first if still seated. Tested: customer walks bench → window (0.9 studs off the mark) and
+  out after quarantine, every time in the next shift.
+- **Fixed: shift-report notes doubled punctuation** ("Halim..", capital after ";"): `ShiftController` trims each
+  finding's full stop and lowercases its first letter before joining. Not re-checked on screen.
+- Events seen firing on their own this session: PassengerShadow, WrongReflection, MovingEquipment, EmptyFootsteps,
+  WrongCustomerRecord (twice). SilentPayment forced (RadioDies) ran clean. WrongLicensePlate's Run/Finding tested in Edit
+  on a real car template (both variants); in play it was correctly refused because that customer's profile already had
+  the plate anomaly.
+- **Test switches reverted:** `ShiftConfig.FORCE_FAULT = nil`, `AnomalyConfig.TEST_INDEX = nil`. A normal shift was
+  started afterwards (random fault DeadBattery, no errors). No ZZ leftovers.
+- Co-op and saves reviewed in code only (Studio can't run 2 players and has no DataStore access here): see the handoff.
+
+## 2026-11-21 (Aizu + Claude): master gameplay prompt, phases 0–5 (Gameplay place 82609083848662, not published)
+
+Working from the user's "MASTER IMPLEMENTATION PROMPT" (full gameplay loop, cashier, Anomaly Director, tycoon,
+staff, countermeasure, co-op). Backups of every Shop script before this work:
+`ServerStorage.ScriptBackups.2026-11-21_BeforeGameplayLoop` (48 scripts as disabled ModuleScripts).
+
+**Phase 0 audit (what already existed and is kept):** shift loop (3 customers), customer NPC + routes, work
+order, gauge/scanner/jack/wrench tools, FIT THE WHEEL tire repair, release/quarantine stamp decision at the
+service window, 5 anomalies (A1–A5), CCTV, case file, end-of-shift report, ProfileStore saves (teammate's
+`PlayerDataService`), matchmaking, shutters. Missing: front-of-shop arrival, dialogue choices, multiple bays,
+battery/radiator repairs, cashier tray, Anomaly Director, tycoon, staff, countermeasure.
+
+**Phase 1 ✅ Play-tested solo:** customer arrival rebuilt.
+- Markers `Workspace.ShopSetup.Markers.Arrival`: `CustomerVehicleSpawn` (road, z 245), `ArrivalPath/1..3`,
+  `CustomerVehicleStop` (forecourt in front of bay 2), `CustomerTalkPoint`, `CustomerExitPoint`,
+  `DeparturePath/1..3`. Tags `CustomerSpawn`, `CustomerStop`, `CustomerTalkPoint`, `VehicleExit`.
+- Three bays: `Bay1CarSpot`, new `Bay2CarSpot` (z 86), `Bay3CarSpot` (z 110), tag `RepairBay`, attribute `BayIndex`.
+- `VehicleService.DriveAlong` (multi-point drive with speed ramp, smooth heading, optional reverse),
+  `VehicleService.Rebase` (moves the car's jack rest pose when it changes spot). Tunables in `VehicleConfig.DRIVE_*`.
+- New `BayService` (free bay, reserve, queue waiters, release). New `DialogueService` + remotes
+  `DialogueOptions` / `DialogueChoose` (server validates token, option, distance; timeout 60 s).
+- `CustomerService`: state machine on the model attribute `State` (and car attribute `CustomerState`), states in
+  `CustomerConfig.STATES`. Car stops out front → customer gets out → pathfinds to the talk point → Talk →
+  greeting by personality (Tired / Nervous / Chatty / Curt) → complaint → options *What happened? / How long? /
+  I'll take a look / I'm not available*. Accept = keys + work order, car drives into a free bay, customer walks to
+  the waiting room. Decline = customer drives off, logged as "Declined", reputation −1 at shift end.
+- `DialogueGui.Choices` + `OptionTemplate` (keys 1–4 or click, Modal so the mouse is free).
+- Verified: car route road → stop → bay 1 (8 s), customer exit + talk point, dialogue lines and options, accept →
+  bay + waiting room + order created; gauge and scan prompts work in the new spot.
+
+**Phase 2 (battery ✅ Play-tested solo; radiator tested 2026-11-22):**
+- Faults now picked per customer: `RepairConfig.FAULTS` (FlatTire 4, DeadBattery 3, Overheating 3 needs rack level 2).
+  Bad readings (`BAD_BATTERY_*`, `BAD_ENGINE_TEMP_*`, `FAULT_CODES`) are set on the car; the scanner reports them.
+- New `ReplicatedStorage.Shop.ProcedureShared` (step lists: battery 5 steps, radiator 6 steps with jack up/down),
+  `ProcedureService` (server: engine-bay prompt shows the current step, checks tool, takes the part from the rack,
+  keeps progress on the car attribute `ProcedureStep`, so nothing resets if interrupted).
+- Each car template got `Root.Engine` attachment + `EnginePrompt`.
+- `WorkshopService.scan` diagnoses battery/radiator faults and verifies them after the repair.
+- New `ProcedureUI` (copy of the repair card with a step template) + client `ProcedureController` (shows while the
+  engine-bay prompt is on screen).
+- Tire changes now use a spare tire from the rack (`NoTire` notice when empty).
+- Verified: dead-battery car → scan diagnoses → 5 steps (wrench/hands/part) → battery stock 2→1 → rescan → Verified →
+  objective "Call … back".
+- Test switch `ShiftConfig.FORCE_FAULT` was used here; set back to nil on 2026-11-22.
+
+**Phase 3 cashier ✅ Play-tested solo (normal pay, mid-payment interrupt, locked → quarantine):**
+- New `Workspace.ShopSetup.Front.Cashier` on the service-window ledge (no map change): sliding `Tray` (diamond
+  plate, lips, `Cash` bundle, attribute `OpenOffset`), `Slot` guard, `LockLamp` (green idle / amber open / red
+  locked, colours as attributes), counter bell (`BellDome.PromptPoint.CallPrompt` "Call customer"), markers
+  `CustomerCashierPoint` (tag `CashierPoint`), `CashierInteractionPoint`, `CashTrayPosition`. Sounds: bell PSE
+  9114132512, tray slide PSE 9125690244, lock clunk 9113437465.
+- New `CashierService` + `CashierConfig`: tray states Closed / Opening / Open / Locked / Closing (State attribute
+  `CashierTray`), `Open`, `Close`, `Lock`, `Unlock`, `Pay` (2.6 s window that an anomaly can cancel), `Interrupt`,
+  bell prompt.
+- `CustomerService.callBack` rewritten: Call (bell when the order is Verified, or the seated customer's prompt
+  any time) → walks to the window → dialogue → tray opens → stamps. RELEASED = customer pays into the tray, server
+  deposits, tray closes, customer leaves. QUARANTINE = tray closes, no pay. Not yet = back to the seat.
+- Anomalous customer at the till: if the customer is flagged (`customer.Manifest`, or model attribute
+  `AnomalyManifest`, which the Director will set), the tray **locks**, anomaly lines play, order gets
+  `TrayLocked = true`, RELEASED is refused by the server and greyed on the stamp ("tray locked · no payment"),
+  only QUARANTINE resolves it (then the tray unlocks). If the flag is set during the payment window, the payment
+  is cancelled and the tray slams shut.
+- Design call: only anomalies that *openly manifest* lock the tray. Subtle data anomalies (wrong plate, low
+  mileage, changed look) do not, so the player still has to judge them; the truth stays hidden until the report.
+- Seen once, not reproduced: a "Not yet" arrived from the client right after the stamps opened (customer went back
+  to sit). Second run behaved. Watch for it in playtests.
+
+**Phase 4 Anomaly Director (core ✅ Play-tested solo with forced events; natural random firing not yet observed):**
+- New `AnomalyDirector` (server): data-driven, weighted pick per trigger, chance per trigger
+  (`AnomalyConfig.DIRECTOR.TRIGGER_CHANCE`), escalation by customer index and shift number, per-event cooldown,
+  anti-repetition (last 3), conflicts, max 1 major + 2 subtle at once, global gap 18 s, major gap 150 s, quiet idle
+  loop (25–50 s) firing IdleWorkshop / EnvironmentalTrigger / RandomOpportunity. Shift seed per shift
+  (`DIRECTOR.TEST_SEED` to reproduce; current seed in `ServerStorage` attribute `AnomalyShiftSeed`). History
+  (event, variant, time, location, customer, vehicle, interaction, resolution, evidence). `ActiveSources()` for the
+  security guard. `Force(id, variant)` only through `ServerStorage.AnomalyDebug` (BindableFunction, Studio only).
+- New `AnomalyCatalog` (data + run functions): the 12 prototypes, each with triggers, requirements, variants,
+  duration, cooldown, detectability, signal: WrongLicensePlate, PassengerShadow (rear seat / camera only),
+  RepeatedDialogue (exact / stutter, manifests), WrongReflection (different person / no face / facing away, in
+  the service window glass), BatterySignal (scanner / headlights, manifests), MovingTool, UnknownFigure (CCTV only,
+  standing / closer each time), FutureFootage (CCTV only, shows the next customer's car, which then really comes),
+  WrongCustomerRecord (manifests), SilentPayment (silent / radio dies, manifests), EmptyFootsteps (past the bay /
+  behind you), MovingEquipment (slid / turned to face). Customer events only fire on the shift's anomalous
+  customer, so the end-of-shift truth stays consistent. Their findings go into the report
+  (`spec.EventFindings`, shown through `AnomalyService.Reveal`). Moved props go back at the next shift.
+- Triggers wired: arrival, before/during dialogue, inspection (gauge, scan), repair steps and tire jobs, after
+  repair, before cashier, cashier dialogue, cashier transaction, CCTV watching (new remote `CctvWatching`), idle.
+  The old A1–A5 stay as each anomalous customer's built-in profile.
+- CCTV-only: server publishes State attribute `CctvEvents`; models that only clients may draw are replicated in
+  `ReplicatedStorage.Shop.AnomalyCctv.Live`. New client `CctvAnomalyController` spawns them locally under
+  `Camera.CctvOnly` only while that camera is on screen. Verified: the CAM 02 figure existed on the client only
+  while CAM 02 was selected, never on the server or in the normal world.
+- Templates: `ServerStorage.AnomalyTemplates.ShadowFigure`, `.Footsteps` (Roblox built-in footstep sound),
+  `ReplicatedStorage.Shop.AnomalyCctv.Figure`. Props tagged `AnomalyMovable` (attribute `MoveKind`): office chair,
+  two tire stacks, two traffic cones inside the shop.
+- Verified forced: PassengerShadow, UnknownFigure (CAM 02 only), MovingEquipment, EmptyFootsteps, RepeatedDialogue
+  → cashier tray locked on arrival without opening, FutureFootage (car drawn on CAM 01 only), MovingTool.
+  Not yet verified: WrongLicensePlate, WrongReflection, BatterySignal, WrongCustomerRecord, SilentPayment in play.
+- Fixed: the service order showed through the CCTV feed window; CCTV now hides `WorkOrderUI` while open.
+- Test switch `AnomalyConfig.TEST_INDEX = 1` was used here; set back to nil on 2026-11-22.
+
+**Phase 5 tycoon + staff ✅ Play-tested solo:**
+- HUD cash now shows the **workshop bank** (`Workspace` State attribute `Workshop`), not this shift's takings. Starts
+  at $0 for a new owner. The report still shows the shift's earnings.
+- Shop terminal: prompt `Workspace.ShopSetup.Front.ShopTerminal.ShopPrompt` at the office parts rack (tag
+  `PartsRack`). New `StarterGui.WorkshopShopUI` (tabs Parts / Parts Rack / Employees / Security / Defense, rows from
+  `ItemTemplate`, bank + rack stock in the header, Backspace or X closes) + client `WorkshopShopController`.
+- Server `UpgradeService`: RemoteFunction `WorkshopPurchase` (keys `Part:<name>`, `Rack:Upgrade`,
+  `Staff:Mechanic`, `Staff:Security`, `Defense:Countermeasure`); checks you're at the rack, 0.4 s rate limit,
+  money, rack capacity, rack level. All prices in `TycoonConfig`. Wages charged at shift end (notice shows paid /
+  short).
+- Rack: level 1 holds 6 (tires, batteries); level 2 ($400) holds 14 and unlocks radiators, which is also what makes
+  overheating cars start arriving (`RepairConfig.FAULTS` MinRack).
+- New `StaffService` + templates `ServerStorage.StaffTemplates.Mechanic / Security`, markers
+  `Markers.Staff.MechanicHome`, `Markers.Staff.SecurityPatrol/1..5` (5 = CCTV desk, attribute `CctvDesk`).
+  - Mechanic ($300, wage $40): waits 6 s after a car is parked, then repairs tire or battery jobs the players haven't
+    started, using rack stock; marks the order Verified and tells everyone to call the customer. Never talks to
+    customers, never touches the till or the stamps. Stops if a threat is active.
+  - Security guard ($350, wage $45, level 2 training $300): patrols, watches the cameras at the desk, every 4 s rolls
+    detection on active Director sources (level × event detectability, 3 tries per source, range 60), tracks at most
+    **2** at once (`MaxTrackedAnomalies`), warns everyone ("Security: Object out of place, bay 2 (23:44)").
+    CCTV-only events only while at the desk.
+- Studio-only test hook `ServerStorage.EconomyDebug` (BindableFunction, adds money).
+- Verified: bank $1,500 → rack II (real button click), 2 radiators, mechanic, guard, a tire = $275 left; second
+  mechanic and the countermeasure refused correctly; unknown key refused. Mechanic did a full battery job
+  (5 steps, battery stock 2 → 1, order Verified) while BatterySignal fired on its own mid-job. Guard tracked 2 sources
+  and ignored the third.
+- Seen: the guard's CCTV-desk point sits behind the office door; it stood just outside the office but still counted
+  as "at the desk". Move point 5 or open the door path.
+
+**Economy foundation (part of phase 5):** `ReplicatedStorage.Shop.TycoonConfig` (prices, parts, rack levels,
+staff, countermeasure, pay per fault), `EconomyService` (workshop bank, stock, rack level, staff, saved in the
+**host's** profile under `Workshop`; `PlayerDataConfig.TEMPLATE.Workshop` added). Payments deposit into the bank.
+Free supplier delivery tops up 1 tire + 1 battery at each shift start.
+
 ## 2026-11-19: CCTV rebuilt to the user's "security system" reference ✅ (solo Play-tested, not published)
 
 - **New `CCTVUI.Desk`** (design 1280×720, one UIScale fit):

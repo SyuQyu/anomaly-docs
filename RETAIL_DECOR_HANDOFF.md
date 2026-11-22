@@ -61,8 +61,8 @@ Workshop.Stock  = repair reserve (unchanged: Tire, Battery, Radiator, used by re
 - **Placement:** inside `Build.Zones.Interior`; not overlapping any `Build.Blocked` box (bays, front lane/queue, till,
   office door, terminal, back door, waiting-room path, mechanic spot), other decor, or the map's solid parts; floor /
   wall / ceiling / surface (lamp or radio on a desk, bench, table or crate) by the hit surface. The server repeats the
-  check and then runs a **path check** (entrance → till, waiting seat, every shelf's browse point) for solid items;
-  if anything becomes unreachable the placement is undone. Max 80 placed, 120 owned, per-item max in config.
+  check and then runs a **path check** for solid items (superseded: see "Layout drives the shop" below; shelves
+  are now a warning, the till/queue/waiting/exit paths stay hard). Max 80 placed, 120 owned, per-item max in config.
 - **Multiplayer:** one shared layout; `BeginMove` locks an object to one player (90 s, released on leave); other players
   get "X is moving that" for move/store/restock. Purchases and restocks are server-checked (terminal / shelf reach,
   rate limit, money, capacity).
@@ -135,6 +135,104 @@ Also seen firing naturally: DisappearingStock (RetailBrowsing), SilentShopper (R
 shopper threads crashed, would have soft-locked the shift); Highlight on the ghost didn't render (now tints the parts);
 PLACE button under a mouse dragged the ghost onto the button (PLACE is now touch-only, the preview freezes over the build
 UI); hybrid customers could pick empty shelves; basket held at a wrong angle.
+
+## Layout drives the shop (added later on 2026-11-22)
+
+Furniture placement now changes how shoppers behave, with every effect visible in build mode. There are no hidden modifiers.
+
+- **`ServerScriptService.ShopSystem.LayoutService`** (new; numbers in **`ReplicatedStorage.Shop.LayoutConfig`**)
+  re-analyses the shop only when furniture is placed, moved, stored or loaded, when the shop opens or closes, or when a
+  shopper reports a shelf they couldn't reach. Waits 0.5 s for changes to settle, runs its path checks in parallel,
+  and never polls. For each shelf it works out:
+  - **Access:** each browse spot in front of the shelf (one per 2.8 studs of shelf width) must be free of solid
+    parts. A shelf with no free spot is *Blocked*, one with no walking path from the door is *NoPath*, and one with
+    no path on to the till is *NoTill*.
+  - **Walking distances** to the door and to the till (real path lengths).
+  - **Visible from the door** (ray from eye height; something tall in between hides it).
+  - **Lit** (within the radius of a placed lamp).
+  - **Spots:** how many shoppers can browse it at once.
+
+  Results are written as model attributes (`LayoutAccess`, `LayoutVisible`, `LayoutLit`, `LayoutEntrance`,
+  `LayoutCashier`, `LayoutSpots`) and to `State.Layout` (JSON). The interaction side is the shelf's `BrowsePoint`,
+  so it moves and turns with the shelf.
+- **Shoppers** (`RetailCustomerService`):
+  - They only plan shelves that are *Open*. A shelf hidden from the door is only found 30 % of the time.
+  - Shelf choice is weighted by stock, preference, being seen from the door, being lit, and nearness to the door
+    and to the till. They visit shelves nearest the door first.
+  - Each shopper takes a free browse spot. On a full shelf they wait 2.5–5 s, then try another shelf.
+  - A shelf they can't actually reach (path fails, or a ray from where they stand doesn't hit the shelf) is reported
+    as blocked, the layout is re-checked, and they take a spare shelf (up to 2). With nothing bought, they say
+    "I can't even get to that shelf." and leave.
+  - A lit shelf gets 25 % longer browsing and +5 % buy chance.
+  - The shift report gets "Shop floor: N couldn't reach a shelf, N gave up on a crowded one."
+- **Placement rules** (`DecorationService`):
+  - **Hard paths:** customers must still be able to walk from the door to the till, the 4 queue spots, the
+    waiting-room path, a waiting seat and the exit. Any of these that was reachable before a placement must still
+    be reachable after it, or the placement is undone. Bays, the front lane, the till and the other `Build.Blocked`
+    boxes stay forbidden; vehicle routes inside the building all lie in `Bays` / `FrontLane`.
+  - **Shelves are soft:** blocking one is allowed, but you get "Placed, but shoppers can't reach: Fluids Shelf."
+    (or "Moved, but…").
+  - **Refused:** any placement that would leave *no* reachable shelf ("That would leave no shelf shoppers can reach.").
+  - The before/after path checks are cached and run in parallel: a placement takes 0.2–0.4 s (was 2.9 s).
+- **Functional furniture** (`DecorationConfig.ITEMS[…].Function`). The DECOR tab shows `FUNCTION: …` or
+  `COSMETIC` on every item.
+
+  | Item | Function |
+  |---|---|
+  | Shelves | Sell stock to shoppers |
+  | Cabinet / Storage Shelf | +10 / +15 backroom capacity. Can't be stored while the backroom would overflow (stock is never lost); moving is allowed |
+  | Workbench | Repair steps on a car within 18 studs take 20 % less time (prompt shows `· WORKBENCH`); also speeds the mechanic |
+  | Tool Storage | Mechanic jobs 15 % faster per chest, down to 70 % at most |
+  | Waiting chair / sofa | Real `Seat`s (tag `DecorSeat`, 1 or 2 per item). A service customer picks at random among free office seats and placed seats that can be walked to. Can't be moved or stored while someone sits there |
+  | Ceiling / wall / desk / industrial lamps | Light shelves within 16 / 12 / 8 / 22 studs (plus the old anomaly-chance cut) |
+  | **CCTV Monitor** (new item, $150, on a desk, bench or table) | Opens the normal camera view (prompt `CctvPrompt`) |
+
+  The rest is cosmetic (appeal only).
+- **Build mode labels:** while in build mode every functional object shows a small label:
+  - Shelves: "OPEN TO SHOPPERS · 39 to door · 30 to till · 2 at a time · seen from the door · lit", or
+    BLOCKED / NO WAY IN / NO WAY TO TILL with the reason.
+  - Seats: WAITING SEAT / SEAT UNREACHABLE.
+  - Other furniture: its function.
+
+  The tray shows "SHELVES REACHABLE n/m". Template: `ReplicatedStorage.Shop.LayoutAssets.ShelfStatus` (BillboardGui).
+- **Saved state:** entries gain `Owner` (UserId of the buyer). Stock, product assignment and storage bonus stay with
+  the entry through move, store and re-place. Upgrade level is shop-wide (rack level), not per object.
+
+### Layout tests (solo Studio Play, all through the real player remotes)
+
+- Storage shelf placed in front of the Fluids Shelf: placed with the warning; shelf → Blocked; backroom 40 → 55.
+- A shopper who prefers fluids skipped the blocked shelf and browsed the Parts Shelf.
+- A part put in front of the Tool Display behind the analysis' back:
+  - The shopper went there, couldn't reach it, it was re-checked to Blocked, and the shopper took the Fluids Shelf
+    instead, bought and queued.
+  - Before the fix, the shopper stood beside the obstacle and counted as there. Found and fixed with the ray check.
+- Cabinet between door and Battery Stand: "hidden from the door". Moving the cabinet away made it visible again.
+- Four shelves stored, then a move that blocked the last one: refused. Shelves placed back with their stock intact
+  (Parts Shelf 3/2/2/2). Workbench moved in front of a shelf: "Moved, but shoppers can't reach: Fluids Shelf."
+- Three shoppers sent to the 2-spot Fluids Shelf:
+  - Never more than 2 browsed it at once.
+  - The third gave up on it (Crowded 1), bought at the Parts Shelf instead and queued.
+- Storage:
+  - With 3 cabinets, capacity was 70 and the backroom held 68.
+  - Storing a cabinet was refused; moving it was allowed.
+- Service customer (office seats reserved for the test) sat on the placed waiting chair.
+- Workbench 15.6 studs from bay 1:
+  - The battery step's hold went 1.2 → 0.96 s with the WORKBENCH tag. To test this I set that car's fault to a
+    diagnosed dead battery by hand.
+  - Moving the bench away put it back to 1.2 s by itself.
+- Mechanic hired + one tool chest: job time 38 s (45 × 0.85).
+- Ceiling lamp at z 72: the 4 shelves within 16 studs lit, the one 21 studs away not.
+- Placed CCTV monitor opened the camera view.
+- Layout JSON round trip: data identical, capacity and layout restored. No console errors; no ZZ leftovers.
+- **Not tested:**
+  - The build-mode labels on screen (the 3D view stopped rendering; text checked from the client).
+  - Phones and gamepad.
+  - Real multiplayer.
+  - Hard-path refusal: no spot in the room can cut those paths now, because they run through the forbidden boxes.
+  - A natural battery/radiator job at the workbench.
+- **Open:**
+  - A temporary obstacle that isn't furniture (not something the game creates today) keeps a shelf Blocked until
+    the next layout event.
 
 ## Not tested / open
 

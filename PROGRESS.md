@@ -2,6 +2,31 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-22 (Aizu + Claude): layout drives the shop: shelf access, functional furniture (Gameplay 82609083848662, not published)
+
+Detail: **[RETAIL_DECOR_HANDOFF.md](RETAIL_DECOR_HANDOFF.md) → "Layout drives the shop"**.
+
+- New `LayoutService` + `ReplicatedStorage.Shop.LayoutConfig`: per shelf access (free browse spots), walking
+  distance to door and till, visibility from the door, lit; re-run only on furniture/shop changes or a shopper's
+  report. Results as model attributes + `State.Layout`.
+- Shoppers pick only reachable shelves, weighted by stock, preference, visibility, light and distance; they share
+  browse spots, wait or move on when a shelf is full, and switch shelves (or leave) when one turns out blocked.
+- Placement: till/queue/waiting/exit paths stay hard; blocking a shelf only warns; leaving no reachable shelf is refused.
+  Path checks now parallel and cached (0.2–0.4 s per placement, was 2.9 s).
+- Functional furniture: cabinets/storage shelves add backroom space (can't be stored if stock would overflow),
+  workbench speeds repair steps nearby, tool chest speeds the mechanic, chairs/sofa are real waiting seats, lamps
+  light shelves, new **CCTV Monitor** item. DECOR tab marks FUNCTION vs COSMETIC; build mode shows status labels.
+- Changed: `DecorationService`, `ProductInventoryService`, `RetailCustomerService` + config, `CustomerService`
+  (seat choice), `ProcedureService`, `StaffService`, `RepairConfig`, `UpgradeService`, `ShopServer`,
+  `DecorationConfig`, `ShiftShared`, client `BuildModeController`, `WorkshopShopController`, `ShiftController`;
+  templates `WaitingChair`/`Sofa` (Seats), new `DecorTemplates.CctvMonitor`, `LayoutAssets.ShelfStatus`.
+- **✅ Play-tested solo** (real remotes): blocked shelf warning + skip, runtime block → re-check + replacement shelf,
+  visibility, last-shelf refusal, stock kept through store/place, crowding (max 2 on a 2-spot shelf), storage
+  capacity + store guard, placed chair used by a service customer, workbench hold 1.2 → 0.96 s and back, mechanic
+  45 → 38 s with a tool chest, lamp radius, CCTV monitor, save round trip.
+- **Not tested:** labels on screen (viewport stopped rendering), phones/gamepad, multiplayer, hard-path refusal
+  in practice, a natural battery job at the bench.
+
 ## 2026-11-22 (Aizu + Claude): retail shop, stock, free decoration, build mode (Gameplay 82609083848662, not published)
 
 Full detail, data layout and the test table: **[RETAIL_DECOR_HANDOFF.md](RETAIL_DECOR_HANDOFF.md)**.

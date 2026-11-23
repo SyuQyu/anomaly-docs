@@ -236,6 +236,16 @@ Furniture placement now changes how shoppers behave, with every effect visible i
   - A temporary obstacle that isn't furniture (not something the game creates today) keeps a shelf Blocked until
     the next layout event.
 
+## Shelf levels (added 2026-11-24)
+
+Fluids Shelf, Parts Shelf and Tool Display are built from Aizu's steel rack mesh and can be upgraded per shelf
+(`DecorationConfig.SHELF_LEVELS`: level 2 $200 / x2 stock, level 3 $400 / x3 stock). Templates `<Item>`, `<Item>_L2`,
+`<Item>_L3` in `DecorTemplates`; the level lives in the saved `entry.State.Level` and on the model as `ShelfLevel`.
+The upgrade is the top row of the Restock window (`RetailAction` "Upgrade"); it re-runs the normal placement and path
+checks at the new width, so a shelf boxed in by neighbours must be moved first. Storing keeps the level, and Place
+uses the highest-level shelf in storage (published as `StoredLevel`, which the build ghost uses).
+To add a level: add a row to `SHELF_LEVELS` and a `<Item>_L4` template for each upgradable item.
+
 ## Not tested / open
 
 - Real multiplayer (2–4 players: shared stock, locks, build at the same time, host leaving), real DataStore save/rejoin.

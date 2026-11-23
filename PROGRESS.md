@@ -2,6 +2,37 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Aizu + Claude): retail shelves use Aizu's steel rack, upgradable to level 3 (Gameplay 82609083848662, not published)
+
+The Fluids Shelf, Parts Shelf and Tool Display now use Aizu's `Shelf_Level_1/2/3` rack mesh (asset 91925089164317)
+instead of the old part-built shelves. Each placed shelf has its own level, 1 to 3. Tire Display and Battery Stand
+are unchanged.
+
+- **Templates:** `ReplicatedStorage.Shop.DecorTemplates.FluidShelf` / `PartsShelf` / `ToolShelf` are level 1; `_L2` and
+  `_L3` copies are levels 2 and 3 (rack 3.57 / 6.57 / 10.07 studs wide, 10.2 tall). Stock sits on the rack's boards via
+  the `Slot<n>` attachments on `Base` (attributes Width / Depth / Rows). The old templates are kept in
+  `ServerStorage.TemplateBackups.ShelvesBefore_2026-11-24`. Aizu's three source models are still in Workspace.
+- **Upgrade:** stand at the shelf → Restock (E) → the top row "Upgrade to level N", $200 for level 2, $400 for level 3.
+  Each level multiplies every product's display capacity (level 2 = x2, level 3 = x3). Stock, products, position
+  and stored state are kept. A wider shelf is checked like a new placement: if something is in the way, it is
+  refused, nothing is charged, and the message says to move it somewhere wider. Shopper spots grow with the width.
+- **Config:** `DecorationConfig.SHELF_LEVELS` (cost, DisplayScale, text), `UPGRADE_COPY`, `LEVEL_ATTRIBUTE`
+  ("ShelfLevel" on the model), `LEVEL_TEMPLATE` ("%s_L%d"), `Upgradable = true` on the three items, helpers
+  `MaxLevel / ClampLevel / TemplateName / DisplayScale`.
+- **Code:** `DecorationService` (level saved in `entry.State.Level`, level-aware spawn / placement / Place / Move,
+  `Upgrade(id)`, decor state publishes `StoredLevel`), `PlacementRules` (optional level), `ProductInventoryService`
+  (`CapacityOf`, `Upgrade` action on `RetailAction`), `RetailAnomalyCatalog` (EndlessShelf uses the shelf's
+  capacity), `BuildModeController` (ghost and checks use the shelf's level), `RestockController` (upgrade row; the
+  window follows the shelf when it is respawned).
+
+Tested in solo Play: the three level 1 racks spawn with stock; Parts shelf 1 → 2 → 3 through the remote (caps 6 → 12
+→ 18, bank $1000 → $400, fourth upgrade refused); the Fluids $200 button clicked in the Restock window: refused while the
+level 3 Parts rack stood next to it (no charge), then upgraded once the rack was stored, and the window stayed open on
+the new shelf; stored level 3 shelf kept its level, build ghost was 10.07 wide, server refused spots only a level 1
+shelf fits; placed again with all stock, reachable. No console errors. Studio save is off in this place, so the test
+upgrades did not persist.
+Not tested: phones and gamepad (the upgrade row in the Restock window), multiplayer, a shopper buying from a level 3 rack.
+
 ## 2026-11-23 (Syu + Claude): sketch UI repainted after Aizu's review (Lobby + Gameplay, not published)
 
 Aizu: "looks like marker scribbles, not paint on a wall". Every ink texture is swapped for a paint version

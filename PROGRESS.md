@@ -2,6 +2,31 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): all UI moved to the paint style + UI motion (Lobby + Gameplay, not published)
+
+- **Shared `ReplicatedStorage.PaintUI`** (+ `PaintUIConfig`), byte-identical in both places, started by `LobbyClient`
+  and `ShopClient`. Driven by CollectionService tags:
+  - `PaintButton`: hover grows to 1.05, press squashes to 0.94 (UIScale child `Motion`); the paint image (child with
+    attribute `Paint=true`) copies the button's `BackgroundColor3`, so controllers that colour buttons by state
+    (shop/restock affordable, hotbar active) keep working unchanged; a `PaintLabel` child mirrors the button's own
+    Text / colour / size / font (the paint would otherwise cover the button's text).
+  - `PaintPanel`: slides up 16 px and fades its paint in when it opens (Visible or its ScreenGui Enabled).
+  - Tags copy with `:Clone()`, so template rows (shop items, restock rows, Aizu's new upgrade row) are covered.
+- **Converted recipe:** old 9-slice frame `82209239162563` (buttons) -> paint banner `79113488936779`; panel frame
+  `104888855026335` -> paint panel `97262305096663` (Slice 180,140,844,500, scale 0.45); grain hidden; header bars
+  and list rows get a paint strip; Merriweather titles -> Oswald Bold (documents keep their serif).
+  Gameplay: 38 buttons, 6 panels, 8 headers/rows, 12 fonts, 8 animated panels (Repair, Procedure, Workshop shop,
+  Restock, Shift report, Case file, Work order clipboard, Pause side). Lobby: 11 buttons, 4 panels, 4 fonts, all
+  lobby panels + role picker buttons animated.
+- **Left as they were on purpose:** CCTV screen (owner asked for its old button style), Briefing paper, handheld
+  gauge/scanner bodies and the work-order clipboard body (objects, not signs; their buttons are painted),
+  `RepairUI.FinishButton`, `PauseMenu.Side` and `BuildModeUI.Root.Hint` (their children are in a layout).
+- **Lobby coin counter** moved to its own ScreenGui `TopbarHud` (`ScreenInsets = TopbarSafeInsets`), so it sits in
+  the Roblox top bar row on every device.
+- **Checked in Play:** lobby bar/list/role picker painted, hover 1.05, panel slide; gameplay HUD hotbar, shop
+  terminal panel with header. **Not checked:** every gameplay window one by one (repair, procedure, restock with the
+  new upgrade row, build mode, case file, pause), phones, gamepad selection (hover motion is mouse only).
+
 ## 2026-11-24 (Aizu + Claude): retail shelves use Aizu's steel rack, upgradable to level 3 (Gameplay 82609083848662, not published)
 
 The Fluids Shelf, Parts Shelf and Tool Display now use Aizu's `Shelf_Level_1/2/3` rack mesh (asset 91925089164317)

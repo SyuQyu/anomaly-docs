@@ -2,6 +2,15 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-23 (Syu + Claude): sketch UI repainted after Aizu's review (Lobby + Gameplay, not published)
+
+Aizu: "looks like marker scribbles, not paint on a wall". Every ink texture is swapped for a paint version
+(`assets/anomaly_ink_ui/make_paint.py`: solid paint swipe, soft rough edge, dry-brush drag only at the ends, grain and
+wall pores; ids in that folder's README) and every PermanentMarker label is now **Oswald Bold** (painted-sign look).
+Lobby: 15 images + 9 labels (role picker, van ROLE button, coin counter, RoleBoard sign). Gameplay: 5 images + 3 labels
+(cash, shift box, coin counter, role badge). Old ink ids are no longer used anywhere.
+Checked in Play: role picker (locked / owned / selected / Robux states) and gameplay HUD.
+
 ## 2026-11-23 (Syu + Claude): coins, buyable roles, role NPC in the lobby, coin pickups (Lobby + Gameplay, not published)
 
 Two currencies now, kept apart:

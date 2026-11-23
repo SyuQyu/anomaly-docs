@@ -2,6 +2,43 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-23 (Syu + Claude): coins, buyable roles, role NPC in the lobby, coin pickups (Lobby + Gameplay, not published)
+
+Two currencies now, kept apart:
+- **Cash** (unchanged): in-shift money / shop bank (`Workshop.Bank`) for garage upgrades, stock and staff at the
+  shop terminal (`TycoonConfig`, `EconomyService`, `UpgradeService`).
+- **Coins** (new): lobby currency, saved in ProfileStore (`TEMPLATE.Coins`). Used to buy roles.
+
+- **Roles are no longer free.** New players have no role (`Class.Selected = ""`, no bonus, badge hidden). Roles are
+  bought with coins (Mechanic 750, Diagnostic 1000, Security 1000, Clerk 1250, `ClassConfig.PRICE`) or with Robux
+  (developer products in `ClassConfig.PRODUCTS`: Mechanic 3735167817 / 49 R$, Diagnostic 3735167853 / 79 R$,
+  Security 3735167861 / 79 R$, Clerk 3735167872 / 99 R$, created 2026-11-23 through Open Cloud, on sale).
+  `Class.Owned` holds what you own.
+- **Shared data modules (byte-identical in both places, hash-checked):** `PlayerDataConfig` (Coins, Class.Owned,
+  Receipts, MAX_RECEIPTS, RECEIPT_SAVE_TIMEOUT), `ClassConfig` (PRICE, PRODUCTS, NONE, new COPY), new `CoinConfig`
+  (SHIFT_REWARD 100, ANOMALY_REWARD 25, pickups 5-15 every 40 s, max 3 at once, 90 s lifetime), `PlayerDataService`
+  (AddCoins, BuyClass handler, coins in RecordShift, **sole owner of `MarketplaceService.ProcessReceipt`**: grants a
+  role, records the PurchaseId in the profile, returns PurchaseGranted only after `OnAfterSave`; NotProcessedYet on
+  error or shutdown). Remotes `SetClass` and `BuyClass` exist only in the lobby.
+- **Coin rewards (Gameplay):** +100 per finished shift (RecordShift), +25 to every player when an anomalous car is
+  quarantined (`ShiftService.settle` -> `CoinPickupService.RewardAnomaly`), random pickups during the shift:
+  `ShopSystem.CoinPickupService` clones `ServerStorage.CoinPickup` at `Workspace.ShopSetup.Markers.CoinSpots`
+  (12 spots, move them freely). Client `CoinController` spins coins and shows the HUD counter
+  (`MainHUD.TopRight.Coins`). Notices `CoinAnomaly` / `CoinPickup` in `ShiftShared.COPY.Notices`.
+- **Lobby:** `Workspace.RoleBoard` = NPC `RoleKeeper` by the filing cabinets next to the side door, `RolePrompt`
+  (E) opens the role picker, wall sign "ROLES". Cards show LOCKED + gold coin price button, Robux button (hidden
+  while the product id is 0), owned -> SELECT / SELECTED. Coin counter top-right (`LobbyHud.Coins`).
+  The van ROLE button still opens the same picker. New icon `ink_coin.png` = `rbxassetid://97872818471379`.
+- **Checked in Play:** lobby NPC prompt opens the picker; with 800 test coins, Mechanic bought (800 -> 50) and
+  selected; Diagnostic refused with "Not enough coins."; gameplay coin spawned after 20 s, picked up (+7), HUD and
+  notice updated.
+- **Checked:** the lobby cards show the Robux buttons with prices read from `GetProductInfo` (Studio showed
+  45 / 72 / 72 / 90, the price shown to the test account, not the configured price).
+- **Not checked:** a completed Robux purchase (receipt -> role granted after save), anomaly reward and shift reward in a real full shift, phone layout
+  of the bigger picker. Existing warning seen once: "Maximum event re-entrancy depth exceeded ... UIFit line 15"
+  (briefing/report sheet fit, not touched here).
+- **Open item:** test a real Robux purchase on a live server once published (Studio purchases are test purchases).
+
 ## 2026-11-23 (Syu + Claude): role (class) system + ink-brush sketch UI, first pass (Lobby + Gameplay, not published)
 
 Four work roles, picked in the lobby van, levelled with XP saved in ProfileStore, each with one bonus in the shift.

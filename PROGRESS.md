@@ -2,6 +2,42 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-23 (Syu + Claude): role (class) system + ink-brush sketch UI, first pass (Lobby + Gameplay, not published)
+
+Four work roles, picked in the lobby van, levelled with XP saved in ProfileStore, each with one bonus in the shift.
+
+- **Data (identical in both places, hash-checked):**
+  - New `ReplicatedStorage.PlayerData.ClassConfig`: roles `Mechanic`, `Diagnostic`, `Security`, `Clerk`, max level 10,
+    XP curve `150 + (level-1)*75`, bonus per level, all wording in `ClassConfig.COPY`, helpers `LevelFor`, `Multiplier`,
+    `ForPlayer`, `Best`.
+  - `PlayerDataConfig.TEMPLATE.Class = { Selected, Xp = { per role } }`. The lobby copy also got Aizu's `Workshop`
+    section, so both copies are the same file again. `CLASS_RATE_SECONDS = 0.5`.
+  - `PlayerDataService` (still the only data owner): sanitises `Class`, renders attributes `Class`, `ClassLevel`,
+    `ClassXp`, `ClassXpNeeded`, `ClassXp_<role>`; `RecordShift` also gives the selected role `120 + cash*0.5` XP.
+    Remote `PlayerData.Remotes.SetClass` exists **only in the lobby** (validated id, rate limited), so the role can not be
+    changed mid-shift.
+- **Bonuses (Gameplay):**
+  - Mechanic: repair holds 10% shorter (+2%/level). Server writes `BaseHold` on the wheel and procedure prompts;
+    client `ShopClient.ClassController` sets the local `HoldDuration` from it (no compounding).
+  - Diagnostic: gauge/scanner read 15% faster (+3%/level): `WorkshopService` read delays, `GaugeController`,
+    `ScannerController`.
+  - Security: shove cooldown 10% shorter (+3%/level): `CountermeasureService`.
+  - Clerk: tips 10% bigger (+4%/level), best Clerk in the server counts: `ShiftService` settle.
+- **UI:**
+  - Ink textures made procedurally (`assets/anomaly_ink_ui/make_ink.py`, no AI, no text; ids in that README):
+    banners `86190013221458` / `100483889946283`, underline `139982717940189`, panel `91857170570817`,
+    ring `124651309308951`, blot `119578760574207`, sketch frame `108316920888323`. White, tinted by `ImageColor3`.
+  - Lobby `LobbyHud.ClassPanel` (one `CardTemplate` cloned per role; selected card gets the sketch frame and a red
+    stamp button; colours for idle/selected are attributes on `SelectButton`) and `CarPanel.Body.RoleButton`
+    (paper brush banner, "ROLE  MECHANIC LV 1"). Car panel hides while the picker is open. Font: PermanentMarker.
+  - Gameplay `MainHUD`: Cash and ShiftBox sit on black ink strokes (old frame/grain hidden, not deleted);
+    new `TopRight.ClassBadge` (paper brush banner).
+- **Checked in Play:** lobby picker opens from the van, switching role updates card + badge; gameplay badge shows,
+  Mechanic hold 2.0 -> 1.8 at LV1 and 4.0 -> 2.88 at LV10 on a test prompt; no new errors.
+- **Not checked:** XP from a real finished shift (Studio API access is off so profiles are not saved, and the lobby
+  role does not carry into a Studio test of the gameplay place); Diagnostic/Security/Clerk numbers in a real shift;
+  phone layout of the picker (it is fitted with the `Fit` UIScale like the other lobby panels).
+
 ## 2026-11-22 (Aizu + Claude): build mode, shop terminal and restock restyled to the monochrome UI (Gameplay 82609083848662, not published)
 
 These screens were still in the old olive/amber look. They now follow the monochrome UI pass (as `RepairUI` / `MainHUD`):

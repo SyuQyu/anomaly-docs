@@ -96,6 +96,7 @@ goes on an inner element; never nest scale-sized frames.
 3. Scan and fix the lobby HUD for the same auto-size pattern (`LobbyHud`).
 4. Radio: it already plays (`Radio.Body.Music`, volume 0.45, heard within 40 studs). Unclear whether it should be
    louder or silent; ask before changing.
-5. Car doors / hood / boot and light switching are not animated or wired (pivots and light parts are ready).
+5. ~~Car doors / hood / boot and light switching are not animated or wired.~~ Done 2026-11-24: `CarBodyService`
+   (see PROGRESS.md). Boot/trunk and the other doors have hinges but nothing opens them yet.
 6. A full shift (talk → repair → release/quarantine → three customers) has not been played through on the new cars.
 7. Replace or license every test car before publishing (§1).

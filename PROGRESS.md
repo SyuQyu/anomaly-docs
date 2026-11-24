@@ -2,6 +2,31 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): car doors, hood and lights move (Gameplay 82609083848662, not published)
+
+- **Templates** (`ServerStorage.VehicleTemplates` Saloon / Estate / Roadster; backup in
+  `ServerStorage.TemplateBackups.VehicleTemplatesBefore_2026-11-24`): every door / `Hood` / `Trunk` / `Tailgate` group
+  has a new invisible `Hinge` part at its hinge pivot, joined to `Root` by Motor6D `HingeMotor`; the group's parts
+  now weld (`CarWeld`) to `Hinge` instead of `Root`. Attributes on `Hinge`: `Axis` (Y doors, X hood/boot) and
+  `OpenAngle` (doors ±70, hood 55, trunk -60, tailgate -75; tweak them in Studio). Template attribute
+  `DriverDoor = "Door_FrontRight"` (the side the customer gets out). Light parts carry `LightGroup` = `Head`
+  (LowBeam, DRL), `Tail`, `Reverse`. No part moved (checked: 0 parts changed position). Old `Sedan` has no groups.
+- **New `ShopSystem.CarBodyService` + `CarBodyConfig`**, the only writer of hinge motors and car light state:
+  - driver door opens when the customer gets out (`CustomerState = CustomerExiting`) and closes after 1.6 s;
+    opens again when the customer reaches the car to leave (released or declined) via a new `Boarding` hook;
+  - hood opens once the car is diagnosed with a procedure fault (dead battery etc.), closes on `Repaired` / `Leaving`;
+  - headlights + tail lights on while the car drives, reverse lights too while backing out, all off when parked
+    (lit = Neon material + the part's Light enabled).
+- **Wired in:** `ShiftService` (`Watch` after spawn, lights in `drive`, `Boarding` hook), `CustomerService`
+  (`leave` and `decline` call `Hooks.Boarding` at the car before the customer is removed).
+- **Checked in Play:** first customer (Estate) arrived with headlights on, lights off at the stop, driver door
+  opened to 70° as the customer got out and closed. On a test Saloon in the play server: hood 0 → 55 on diagnosis
+  → 0 on repair, `Board` opened and closed the door, reverse/tail lights on and off, destroy with a door open, no
+  errors. Edit preview: all panels of the three cars open the right way.
+  **Not checked:** a full shift through release and decline (the `Boarding` hook in a real departure), multiplayer.
+- The BatterySignal "Headlights" anomaly still flashes light parts by Material; it runs only while the car is parked
+  (lights off), so the two do not overlap.
+
 ## 2026-11-24 (Syu + Claude): fewer coin pickups in the shift (Lobby + Gameplay, not published)
 
 - `ReplicatedStorage.PlayerData.CoinConfig` (byte-identical in both places, hash 834450097 both sides):

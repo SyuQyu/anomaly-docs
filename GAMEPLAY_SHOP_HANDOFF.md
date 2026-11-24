@@ -93,7 +93,8 @@ goes on an inner element; never nest scale-sized frames.
 1. **Save both places.** Nothing from this file is saved.
 2. **Not tested in a real playtest** (the MCP play button got stuck): shutters stretching at runtime, BAYS /
    WINDOW buttons on the new strips, the prompt hold bar in game. Studio previews of open and closed shapes passed.
-3. Scan and fix the lobby HUD for the same auto-size pattern (`LobbyHud`).
+3. ~~Scan and fix the lobby HUD for the same auto-size pattern (`LobbyHud`).~~ Scanned 2026-11-24: no runaway
+   growth, nothing changed (see PROGRESS.md).
 4. Radio: it already plays (`Radio.Body.Music`, volume 0.45, heard within 40 studs). Unclear whether it should be
    louder or silent; ask before changing.
 5. ~~Car doors / hood / boot and light switching are not animated or wired.~~ Done 2026-11-24: `CarBodyService`

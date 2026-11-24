@@ -5,6 +5,8 @@ Read in this order:
 1. [SESSION_HANDOFF.md](SESSION_HANDOFF.md): the base game (shift loop, anomalies, where everything lives, rules).
 2. [LOBBY_MATCHMAKING_HANDOFF.md](LOBBY_MATCHMAKING_HANDOFF.md): lobby place, cars as rooms, rejoin,
    ProfileStore data, monochrome UI, test van, open items.
+- [GACHA_SHOP_ENDLESS_PLAN.md](GACHA_SHOP_ENDLESS_PLAN.md): agreed design for the role gacha, lobby item shop and
+  Endless Night mode (2026-11-24), with build order.
 3. [GAMEPLAY_SHOP_HANDOFF.md](GAMEPLAY_SHOP_HANDOFF.md): test cars, customer cars with random paint and plates,
    office restored, shop front (shutters, door, control panel, open-the-shop start), paper notice, HUD auto-size fix.
 4. [GAMEPLAY_LOOP_HANDOFF.md](GAMEPLAY_LOOP_HANDOFF.md): the full loop from the master implementation prompt

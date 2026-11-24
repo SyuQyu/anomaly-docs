@@ -2,6 +2,17 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): lobby HUD auto-size scan (Lobby, nothing changed)
+
+- Scanned every `AutomaticSize` GuiObject in the lobby `StarterGui` (25: `LobbyHud`, `TopbarHud`, `RoleScreen`).
+  Only one match for the old pattern: the paint `Frame` (ImageLabel `{1,28},{1,24}`, centred) inside the auto-height
+  `LobbyHud.CarPanel`, `RejoinPanel` and `ListPanel`.
+- Measured in Studio by adding and removing text lines: each panel grows with its `Body` and shrinks back to the same
+  height (CarPanel 346 → 403 → 346, RejoinPanel 238 → 277 → 238, ListPanel 394 → 478 → 394). It settles at
+  Body + 12 px (the paint's bottom overhang) and never runs away, so it was left as it is. If a panel ever stretches,
+  the fix is the gameplay one: paint `Frame` at `(1,0,1,0)` and +12 px top/bottom `UIPadding` on `Body`.
+- `TopbarHud.Coins` and `RoleScreen` auto-sized items follow the rule already.
+
 ## 2026-11-24 (Syu + Claude): cashier props removed, shutter buttons and office door clickable (Gameplay, not published)
 
 - **Cashier props gone** (owner: "ga perlu ada cashier"): `Tray`, `Slot`, `BellBase`, `BellButton`, `BellDome` (bell

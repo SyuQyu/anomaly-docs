@@ -2,6 +2,26 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): full-screen role screen + typewriter fonts (Lobby + Gameplay, not published)
+
+- **New `StarterGui.RoleScreen`** (Lobby) replaces the old `LobbyHud.ClassPanel` popup (deleted). Full screen,
+  1600x900 design fitted to the screen. Left: your own avatar (character cloned into `Left.Avatar` ViewportFrame
+  on open, destroyed on close; camera tunables are attributes `Turn`, `FieldOfView`, `Distance` on the viewport)
+  on a painted pedestal, name and worn role. Middle: current role, one action button (BUY with coin price and
+  "NEED x MORE" / WEAR / WEARING; colours are attributes on `ActionButton`), Robux button, LEVELS table (one
+  `RowTemplate` cloned per level, current level marked). Right: COLLECTION grid (one `CardTemplate` cloned per role,
+  LOCKED / OWNED / WEARING) and a detail panel (lore, bonus at your level, XP bar). Top right: coins + LEAVE.
+  Opened by the RoleKeeper NPC prompt and the van ROLE button; LobbyHud and TopbarHud hide while it is open.
+  Controller: `StarterPlayerScripts.LobbyClient.RoleScreen` (ModuleScript). New wording in `ClassConfig.COPY`
+  (ScreenTitle, Levels, Collection, Need, Wear, Wearing, Owned, Leave, per-role `Lore`), identical in both places.
+- **Fonts:** Oswald is gone. Large text = **Special Elite** (worn typewriter), small labels/buttons =
+  **Josefin Sans SemiBold**, labels written as spaced caps via `PaintUI.Spaced` (shared, identical both places).
+  Lobby 13 titles + 20 labels, Gameplay 30 + 38. Roblox does not allow uploading font files; all fonts are Roblox
+  built-ins.
+- **Checked in Play:** NPC opens the screen; avatar shows; Mechanic bought with coins (800 -> 50) and worn, all
+  three columns update; Clerk shows NEED 1200 MORE; gameplay shop terminal with the new fonts.
+  **Not checked:** phones (fit scale only), gamepad navigation of the cards, a real Robux purchase.
+
 ## 2026-11-24 (Syu + Claude): all UI moved to the paint style + UI motion (Lobby + Gameplay, not published)
 
 - **Shared `ReplicatedStorage.PaintUI`** (+ `PaintUIConfig`), byte-identical in both places, started by `LobbyClient`

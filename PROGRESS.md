@@ -2,6 +2,31 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): lobby coin counter no longer stretches in the Studio edit view (Lobby, not published)
+
+- `StarterGui.TopbarHud.Coins` filled the whole screen height in Edit (its height is scale 1 of the top-bar inset,
+  and Edit has no top bar, so 576 px of paint down the right edge). Added a `UISizeConstraint` (max height 58) and
+  anchored it top right (`AnchorPoint 1,0`, `Position 1,-4,0,0`).
+- **Checked:** Edit view: 82x58 at the top right. Play: unchanged, 95x58 in the top-bar row (the row is 58 tall, so
+  top-aligned and centred are the same). Gameplay has no top-bar GUI.
+
+## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 3: supply shop screen + loadout (Lobby, not published)
+
+- **New `StarterGui.SupplyScreen`** (same paint style, 1600x900 fitted): title, coins + CLOSE; `List` = one row per
+  item cloned from `Content.RowTemplate` (name, detail, group, owned count, `BuyButton` "BUY price", `TakeButton`
+  TAKE / TAKEN); `Side.Loadout` panel "TAKING n/3" with one slot row per loadout slot; `Side.Status` line for
+  short messages (not enough coins, carry limit, "Buy one first.", "You can take 3 items."). Button colours are
+  attributes on the template buttons (`Ink`/`Text`, `IdleInk`, `TakenInk`, `EmptyInk` ...).
+- **Controller** `StarterPlayerScripts.LobbyClient.SupplyScreen`; the server stays the judge (`BuyItem`,
+  `SetLoadout`). Opened by the new **SUPPLIES** button in `LobbyHud.BottomBar` and by the new `SupplyButton`
+  ("ITEMS · TAKING n/3") in the van panel `LobbyHud.CarPanel.Body` under the ROLE button.
+- `ItemConfig.COPY` got `Open`, `Caption`, `Slot`, `Empty`, `BuyPrice`, `Taken`, `NoneOwned`, `LoadoutHint`
+  (both places, hash 231418980).
+- **Checked in lobby Play:** SUPPLIES opens the screen with the nine items; bought Energy Drink and Flare (coins 2000 →
+  1820), took both (TAKEN, slots 1–2 filled), taking a Salt Pouch you do not own was refused with "Buy one first.".
+  **Not checked:** the van-panel ITEMS button (needs a seat in a van), phones, gamepad.
+- Items do nothing in a shift yet (next step).
+
 ## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 2: role gacha screen + Robux products (Lobby, not published)
 
 - **Robux products** (created through Open Cloud with the owner's API key, on sale): `Role Gacha x1` = 3735713171

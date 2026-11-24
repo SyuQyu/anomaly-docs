@@ -57,7 +57,8 @@ Endless Night ends on **3 strikes**.
 
 ## Build order
 
-1. Data contract (both places, hash-checked).
-2. Gacha: server pull, Robux products (Open Cloud), gacha screen in the lobby.
+1. Data contract (both places, hash-checked). **Done 2026-11-24.**
+2. Gacha: server pull, Robux products (Open Cloud), gacha screen in the lobby. **Done 2026-11-24** (products
+   3735713171 x1 39 R$, 3735713219 x10 349 R$). Role perks in gameplay still to do.
 3. Item shop screen + loadout; gameplay effects one item at a time.
 4. Endless Night: van mode pick, teleport data, endless loop and strikes in `ShiftService`, leaderboard.

@@ -2,6 +2,34 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 2: role gacha screen + Robux products (Lobby, not published)
+
+- **Robux products** (created through Open Cloud with the owner's API key, on sale): `Role Gacha x1` = 3735713171
+  (39 R$), `Role Gacha x10` = 3735713219 (349 R$). Set in `GachaConfig.PRODUCTS` (both places). The product
+  descriptions state the odds and the pity.
+- **New `StarterGui.GachaScreen`** (built from `RoleScreen` parts, same paint style and fonts, 1600x900 fitted):
+  title, coins + CLOSE; `Pool` = the four exclusive roles as cards (ring colour per rarity: attributes `RareRing`,
+  `EpicRing`, `LegendaryRing` on the card templates), `Detail` (lore, perk at the current level, OWNED / LOCKED);
+  `Side` = `Odds` panel (one `RowTemplate` row per rarity from `GachaConfig.RATES`), PULL x1 / PULL x10 (coin price,
+  "NEED x MORE"), Robux x1 / x10 (prices from `GetProductInfo`), pity line; `Results` overlay (one
+  `ResultTemplate` card per pull, NEW or +300 XP tag, frame on a Legendary, OK).
+- **Robux rules:** the Robux buttons show only when `PolicyService:GetPolicyInfoForPlayerAsync().ArePaidRandomItemsRestricted`
+  is false; the odds are on screen before buying.
+- **Controller:** `StarterPlayerScripts.LobbyClient.GachaScreen` (ModuleScript). Opened by the new GACHA button in the
+  `RoleScreen` top bar and by the FROM GACHA action; CLOSE goes back to the role screen.
+- **`RoleScreen`:** collection now has tabs `Right.Tabs.Shop` / `Right.Tabs.Gacha` (colours = attributes
+  `ActiveText` / `IdleText`; old `CollectionHeader` hidden), 4 cards per tab; a gacha role you do not own shows
+  FROM GACHA (`ActionButton` attributes `GachaInk` / `GachaText`) and opens the gacha; no Robux button for gacha
+  roles; `GachaConfig.COPY` got `Open`, `Pool`, `Unknown`, `OddsValue`, `OddsHint`, `RobuxPrice`, `Results`, `Ok`,
+  `TabShop`, `TabGacha`.
+- **Checked in lobby Play:** NPC opens the role screen, GACHA tab shows the four roles with FROM GACHA, GACHA button
+  opens the gacha screen (odds, prices R$ 36 / 315 shown to the test account, pity line), PULL x10 with coins showed ten
+  results (one Legendary, NEW / +300 XP tags), coins 8000 → 4400. Simulated receipts through `DataDebug`: x10 gave
+  10 pulls, the same PurchaseId again gave nothing, x1 gave 1. Contract hashes equal in both places
+  (PlayerDataService 2133492494, GachaConfig 1713998523).
+- **Not checked:** a real Robux purchase (live server only), phones, gamepad focus on the new buttons.
+- The four gacha role perks are not wired in gameplay yet (step 3/4).
+
 ## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 1: data layer (Lobby + Gameplay, not published)
 
 Plan: [GACHA_SHOP_ENDLESS_PLAN.md](GACHA_SHOP_ENDLESS_PLAN.md). No UI yet.

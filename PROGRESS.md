@@ -2,6 +2,35 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 1: data layer (Lobby + Gameplay, not published)
+
+Plan: [GACHA_SHOP_ENDLESS_PLAN.md](GACHA_SHOP_ENDLESS_PLAN.md). No UI yet.
+
+- **Contract modules, byte-identical in both places (hashes: PlayerDataService checked equal after the debug hook,
+  PlayerDataConfig 1555749287, ClassConfig 527988741, GachaConfig 1069200414, ItemConfig 971854431):**
+  - `ClassConfig`: `ORDER` now has 8 roles; new gacha roles `NightOwl` (Rare, bonus `NightVision`), `Medium` (Epic,
+    `Whisper`), `Inspector` (Epic, reuses `ReadTime` + `Hint = true`), `Regular` (Legendary, reuses `Tip` +
+    `AnomalyCoins = 2`); `Gacha = true`, `Rarity`; helpers `IsGacha`, `Has(player, flag)`; COPY for the four roles,
+    `FromGacha`, `GachaHint`, `Rarity`.
+  - New `GachaConfig`: 400 coins / 3600 for ten, rates 70/25/5, pity 40, duplicate = +300 role XP, `Roll(rng, pity)`,
+    `Percent`, `PRODUCTS = { One = 0, Ten = 0 }` (Robux products not created yet), COPY.
+  - New `ItemConfig`: the 9 items, prices, groups, `LOADOUT_SIZE` 3, `MAX_STACK` 20, COPY.
+  - `PlayerDataConfig.TEMPLATE`: `Gacha {Pity, Pulls}`, `Items`, `Loadout`, `Boosts {Coins}`, `Endless {Best, Runs}`.
+  - `PlayerDataService`: sanitises the new fields; renders attributes `GachaPity`, `GachaPulls`, `Item_<id>`,
+    `Loadout` (comma list), `CoinBoost`, `EndlessBest`; handlers for `GachaPull` (1 or 10, rate limited, server
+    rolls), `BuyItem`, `SetLoadout`; results sent on `GachaResult`; `ProcessReceipt` also grants gacha pulls for the
+    future products (same PurchaseId record + confirmed save); API `Loadout`, `UseItem`, `SetCoinBoost`,
+    `RecordEndless`; `RecordShift` applies and clears the coin boost.
+  - Studio-only test hook `ServerStorage.DataDebug` (BindableFunction, both places; ignored outside Studio):
+    AddCoins / Data / UseItem / RecordShift / SetBoost / Receipt.
+- **Remotes (Lobby only):** `PlayerData.Remotes.GachaPull`, `GachaResult`, `BuyItem`, `SetLoadout`.
+- **Checked:** 100k simulated pulls: Rare 69.7 %, Epic 24.5 %, Legendary 5.8 % (pity included), never more than 40
+  pulls without a Legendary. In lobby Play: x1 and x10 pulls (coins 10000 → 5550 with two item buys), duplicates gave
+  XP, x5 pull and unknown item refused, loadout set, UseItem spends and drops the slot at 0, not-carried item refused,
+  Lucky Charm boost made a shift pay 150 coins instead of 100 and then cleared.
+- **Next:** gacha screen and Robux products, supply shop screen + loadout picker, gameplay item effects, the four
+  role perks, Endless Night.
+
 ## 2026-11-24 (Syu + Claude): lobby HUD auto-size scan (Lobby, nothing changed)
 
 - Scanned every `AutomaticSize` GuiObject in the lobby `StarterGui` (25: `LobbyHud`, `TopbarHud`, `RoleScreen`).

@@ -2,6 +2,40 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 4: items and gacha role perks in the shift (Gameplay + contract, not published)
+
+- **Using items:** new `MainHUD.BottomRight.Items` row above the hotbar (one `SlotTemplate` cloned per loadout
+  slot, keys **5 / 6 / 7**, click or tap works too); `BottomRight` is now 160 tall so the row grows upwards. Client
+  `ShopClient.ItemController`; remote `Shop.Remotes.UseItem`; server `ShopSystem.ItemService` (+ `PerkConfig`),
+  started from `ShopServer`. Order on the server: item must be in the loadout → effect runs (no yield) → only then
+  `PlayerDataService.UseItem` spends it, so a refused use costs nothing.
+- **Effects:** Tire Patch = `WorkshopService.ItemPatch` (new wheel from the car's template, car back to level,
+  marked repaired; the tire still has to be checked with the gauge); Diagnostic Chip = `WorkshopService.ItemScan`
+  (scanner readings + instant diagnosis, flat tires included); Jump Pack = `ProcedureService.Complete` (dead-battery
+  job only, after diagnosis); Salt Pouch = nearest anomaly entity within 30 studs in any direction, same push as the
+  shove (`CountermeasureService.Target` / `Push`, split out of the shove code); Energy Drink = x1.3 walk speed for
+  20 s (restores only if nothing else changed the speed; waits out a grab); Flare = `ServerStorage.ItemAssets.Flare`
+  (neon stick + red light + smoke) dropped at your feet for 60 s; Pocket Watch = `ShiftService.AnomaliesLeft()`;
+  Lucky Charm = coin boost 0.5 for the next `RecordShift`. Notices in `ShiftShared.COPY.Notices` (`Item*`, `Whisper`).
+- **CCTV Film is out of the shop for now** (`ItemConfig.ITEMS.CctvFilm.Hidden = true`, removed from `ORDER`): a camera
+  replay needs a recording system that does not exist yet. Its data entry is kept.
+- `ItemConfig` (both places, hash 1775892125): `Short` names, `KEYS`, `USE_REMOTE`, `USE_RATE_SECONDS`,
+  `CAR_REACH` 14, `SALT_REACH` 30, COPY `SlotCount`, `Keys`; `IsItem` ignores hidden items.
+- **Gacha role perks:** Night Owl = `Lighting.NightVision` (ColorCorrection, attributes `BrightnessPerBonus` 0.45,
+  `ContrastPerBonus` 0.15) switched on by `ClassController` for that player only; Medium = `ItemService` listens to
+  `AnomalyDirector.OnEvent` and sends "Whisper" to Medium players within 40 studs x the role bonus; The Regular =
+  `CoinPickupService.RewardAnomaly` x2 (`ClassConfig.Has(player, "AnomalyCoins")`) and bigger tips (existing `Tip`
+  bonus); Inspector = faster reads (existing `ReadTime` bonus). **Inspector's extra hint line is not built yet.**
+- `PlayerDataService` debug hook got `GiveItem`, `ClearLoadout`, `SetClass` (Studio only, both places, hash
+  1631778835).
+- **Checked in gameplay Play:** HUD slots "5 DRINK x2 / 6 FLARE / 7 WATCH"; Energy Drink 16 → 20.8 speed; Flare
+  dropped at the feet; Pocket Watch "1 wrong customer left"; Lucky Charm boost 0.5; Salt Pouch with nothing near was
+  refused and kept; Night Owl turned night vision on; Medium got "Whisper" on an anomaly forced next to them; on a
+  real accepted flat-tire job: Jump Pack refused ("No dead battery job") and kept, Diagnostic Chip found "Flat tire,
+  front left", Tire Patch fitted a new wheel exactly on the hub (repaired, 33 psi, service order REPAIRED).
+- **Not checked:** Jump Pack on a real dead-battery car, Salt Pouch hitting a lurker, The Regular's double coins on a
+  quarantine, phones/gamepad for the item slots. Slots compact when an item runs out (the next item moves to key 5).
+
 ## 2026-11-24 (Syu + Claude): lobby coin counter no longer stretches in the Studio edit view (Lobby, not published)
 
 - `StarterGui.TopbarHud.Coins` filled the whole screen height in Edit (its height is scale 1 of the top-bar inset,

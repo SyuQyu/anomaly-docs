@@ -2,6 +2,26 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): cashier props removed, shutter buttons and office door clickable (Gameplay, not published)
+
+- **Cashier props gone** (owner: "ga perlu ada cashier"): `Tray`, `Slot`, `BellBase`, `BellButton`, `BellDome` (bell
+  prompt) and `LockLamp` deleted from `Workspace.ShopSetup.Front.Cashier`; backup in
+  `ServerStorage.TemplateBackups.CashierBefore_2026-11-24`. The markers `CustomerCashierPoint`,
+  `CashierInteractionPoint`, `CashTrayPosition` stay, so customers and shoppers still queue and pay at the window.
+- `CashierService` now works with no tray: `Open` / `Close` / `Lock` / `Pay` keep the same states (`CashierTray`
+  attribute, 2.6 s payment an anomaly can interrupt, locked flow) and only skip the slide/cash/lamp visuals when those
+  parts are missing. No bell: calling a seated customer back is the customer's own E prompt.
+- Wording: `ShiftShared` `ReleaseTrayLocked` → "till locked · no payment", `Prompts.CallBack` → "Call %s back to the
+  window"; `RetailAnomalyCatalog` ImpossibleCurrency signal/notice say till / counter instead of tray.
+- **Click to press:** preplaced `ClickDetector` named `Click` (range 10) in `ShutterPanel.Buttons.Bays`,
+  `Buttons.Window` and `Front.OfficeDoor`; `ShopFrontService` wires `MouseClick` to the same toggle as the E prompts
+  (`ShopFrontConfig.CLICK`). E prompts kept for gamepad. Hotbar tools are attributes, not Tool instances, so
+  clicking works whatever the player holds.
+- **Checked in Play:** clicking WINDOW opened the shop (ShopOpen true), clicking the office door opened it; a play-server
+  copy of `CashierService`: Points found, Pay true after 2.6 s, Pay interrupted → Locked, Unlock → Closed. No new
+  console errors. **Not checked:** a full customer payment and a retail checkout in a real shift, touch tap on the
+  buttons.
+
 ## 2026-11-24 (Syu + Claude): car doors, hood and lights move (Gameplay 82609083848662, not published)
 
 - **Templates** (`ServerStorage.VehicleTemplates` Saloon / Estate / Roadster; backup in

@@ -2,6 +2,15 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): fewer coin pickups in the shift (Lobby + Gameplay, not published)
+
+- `ReplicatedStorage.PlayerData.CoinConfig` (byte-identical in both places, hash 834450097 both sides):
+  `PICKUP_FIRST_DELAY` 20 -> 90 s, `PICKUP_INTERVAL` 40 -> 150 s, `PICKUP_MAX_ACTIVE` 3 -> 1, `PICKUP_LIFETIME`
+  90 -> 60 s. Amount per coin (5-15), shift reward and anomaly reward unchanged. No code change in
+  `CoinPickupService`.
+- **Checked in Play (Gameplay):** shift 1 started, the first coin appeared ~90 s in, only one coin at a time.
+  **Not checked:** a full shift to count total pickups.
+
 ## 2026-11-24 (Syu + Claude): full-screen role screen + typewriter fonts (Lobby + Gameplay, not published)
 
 - **New `StarterGui.RoleScreen`** (Lobby) replaces the old `LobbyHud.ClassPanel` popup (deleted). Full screen,

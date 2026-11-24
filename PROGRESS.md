@@ -2,6 +2,64 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): UI spacing pass: nothing under the Roblox top bar, margins and padding (Lobby + Gameplay, not published)
+
+Owner: "pastikan tiap tempat ada margin atau padding di bagian luar container". Measured in Play with every screen
+opened: panels closer than 12 px to a screen edge or inside the 58 px top bar, and text closer than 6 px to its panel.
+- `ShopClient.UIFit`: when the ScreenGui ignores the GUI inset, the top-bar height is added to the top **and** bottom
+  margin (sheets are centred), so briefing, shift report, case file, shop terminal, restock and pause no longer scale
+  up into the top bar. Callers that pass their own `MarginTop` (work order clipboard) are unchanged. Below a ~720 px
+  tall window the `FLOOR` 0.72 still wins (text stays legible) and big sheets can touch the top bar.
+- Fixed positions moved below the top bar (y 70): `RepairUI.CloseButton`, `BuildModeUI.Root.Banner`,
+  `CCTVUI.Screen.TopRight` (EXIT/LOG). `WorkOrderUI.Tab` 12 px off the right edge, 186 wide. MainHUD corners now 20 px
+  from the sides (16 top, 20 bottom). Notice padding 14/8. Hotbar key numbers at (9,5), labels 15 px.
+- Lobby: new shared `LobbyClient.ScreenFit` (used by `RoleScreen`, `GachaScreen`, `SupplyScreen`, replacing three
+  copies of `fit()`): scales the 1600x900 content into the area below the top bar minus `Content` attribute `Margin`
+  (16) and centres it there. `CarPanel` at (20,16), `TopTimer` y 12. Supply rows 78 tall with ~14 px above the name
+  (owner's screenshot: the name sat on the paint edge); price label not letter-spaced.
+- Leftover cashier wording: customer prompt "Call to the window", MechanicDone "Call them to the window."
+- **Checked:** both places re-measured in Play after the pass (lobby: no element at an edge; gameplay: only the
+  big sheets at the 576 px Studio window, see FLOOR above); supply screen screenshot. **Not checked:** phones.
+
+## 2026-11-24 (Syu + Claude): one type pair in both places (Lobby + Gameplay, not published)
+
+Owner: the gameplay font "beda banget" from the lobby and reads as AI slop. Census: gameplay used 6 families (Roboto
+Mono 159 labels, Source Sans Pro 109, Josefin 37, Merriweather 16, Special Elite 16, Legacy Arial 3); lobby used 2.
+- Every gameplay label and the 17 leftover lobby labels moved to the lobby pair: Roboto Mono and Merriweather →
+  **Special Elite**; Source Sans Pro, Legacy Arial, Montserrat → **Josefin Sans** with the same weight (310 labels).
+  Josefin labels that do not auto-scale grew 10 % (smaller x-height); hotbar labels and the Start Shift button were put
+  back after an overflow check; `ProcedureUI.Panel.Header.Title` scales (max 18). `UITheme.Fonts` now names the same
+  pair. Backups: `ServerStorage.TemplateBackups.GuiFontsBefore_2026-11-24` in both places.
+- Logged to the design knowledge base (`e:\web\ai reference`): new type pattern "menus art-directed, in-game HUD left
+  on engine defaults" and rejected entry `anomaly-gameplay-hud-and-screens`.
+- **Checked:** briefing, HUD, shop terminal in Play; overflow scan of all filled labels: none left.
+
+## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 5: Endless Night mode (Lobby + Gameplay, not published)
+
+- **Contract `MatchConfig` (both places, hash 501471945):** `MODES = { "Shift", "Endless" }`, `MODE_DEFAULT`,
+  `IsMode`, `NextMode`, `ENDLESS_BOARD_STORE = "ANOM_EndlessBest_v1"`, `ENDLESS_BOARD_SIZE`. Not a VERSION bump
+  (the field is optional; old records read as Shift).
+- **Lobby:** `CarService` keeps `car.mode` (reset to Shift when the van empties or leaves), attribute `Mode` on the van,
+  host-only action `CycleMode` (Open/Countdown only), and writes `mode` into the match record. Van panel row
+  `LobbyHud.CarPanel.Body.ModeActions.ModeButton` "MODE  NIGHT SHIFT / ENDLESS NIGHT" (guests see "(HOST PICKS)").
+  `LobbyCopy.Hud.Modes/ModeHost/ModeGuest`.
+- **Gameplay:** `MatchSessionService` copies the record's mode to `Shop.State.Mode` when it claims the match.
+  `ShiftService` reads it at shift start: Endless loops customers until 3 strikes or every player is down at once
+  (`Humanoid.Died` + all humanoids at 0). Every 3 customers = one level: anomalous chance 30 % +10 %/level (max 75 %),
+  gap between customers shrinks 1 s/level (min 2 s), the Director sees `Remaining = 99`. Strike = released an
+  anomalous car or quarantined a normal one (notice "Strike n of 3"); a right call pays every player 20 coins.
+  End: notice "Three strikes..." or "Nobody is left standing...", `PlayerDataService.RecordEndless` (profile best +
+  runs), `ShopSystem.EndlessBoardService.Submit` (OrderedDataStore, keeps the best). Tunables `ShiftConfig.ENDLESS`.
+  HUD: "ENDLESS NIGHT  LV n" and "CUSTOMER n · STRIKES s/3" (`ShiftController`, `ShiftShared.COPY.Hud`).
+- **Checked:** lobby: host joins a van, the mode button cycles to ENDLESS NIGHT (van attribute `Mode = Endless`).
+  Gameplay with `Shop.State.Mode` set by hand (attribute removed again after the test): HUD shows Endless, a normal
+  car quarantined gave Strike 1/3 and no coins, killing the only player ended the night after the customer had left
+  (EndlessWiped notice, EndlessBest 1, shift report, +100 shift coins). Board write refused in Studio (no API access),
+  expected.
+- **Not built / not checked:** the lobby leaderboard board that shows the best nights; a full teleport lobby → gameplay
+  in Endless (Studio loads the *saved* gameplay version); a run to 3 strikes; the shift report still says "END OF
+  SHIFT". A wipe while a customer is still being served only ends the night after that customer.
+
 ## 2026-11-24 (Syu + Claude): gacha / item shop / Endless Night, step 4: items and gacha role perks in the shift (Gameplay + contract, not published)
 
 - **Using items:** new `MainHUD.BottomRight.Items` row above the hotbar (one `SlotTemplate` cloned per loadout

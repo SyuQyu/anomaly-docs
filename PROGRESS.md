@@ -13,6 +13,9 @@ Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLI
 - **Walk-in NPC boards (lobby):** `RoleBoard/GachaBoard/SupplyBoard.Zone` (amber box in front of each keeper).
   `LobbyClient.bindBoard` opens the screen when the local root enters the trigger; it only fires again after
   leaving and re-entering, and not while in a car or with another screen open. Board prompts disabled.
+  Leaving the box closes that board's screen (`bindBoard` now takes `close`/`isOpen`); a `TouchEnded` only counts
+  when the root is really outside the trigger's footprint, so standing still doesn't flicker it shut. Checked in
+  Play: gacha opened on entry, stayed open 2 s while standing in the box, closed on walking out.
 - **NPC drivers:** each lobby van has `Driver` (clone of RoleKeeper, posed sitting at the wheel and anchored so it
   moves with `CarDrive`; the rig uses AnimationConstraints, so the pose is computed from the joint attachments).
   Old `Seat1` is now `DriverSeat` (Disabled); player seats renumbered: Seat1 front passenger, Seat2-3 middle,

@@ -2,6 +2,38 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): laptop shop, deliveries as boxes, intro cinematics (Lobby + Gameplay, not published)
+
+- **Order laptop (gameplay):** `ShopSetup.Office.OrderDesk` in the office corner by the door (where Syu put a
+  marker): `DeskBox` + `DeskTop` (simple wooden box, per Syu) and `Laptop` = Creator Store "old laptop off"
+  (15497965997, no scripts; Syu set its facing by hand). Earlier free models (a gothic desk and a "DJ laptop") both hid
+  a `Runtime` script with a RemoteFunction/ScreenGui despite "No scripts" in their description; they were stripped
+  and then replaced. `Laptop.ScreenAnchor` (invisible part on the display, Up = screen normal, size = display)
+  carries `ShopPrompt`, the `PartsRack` tag (server reach check) and attributes `CameraDistance` 1.75 /
+  `CameraSeconds` 0.6. The old `Front.ShopTerminal` box was deleted; `Build.Blocked.Terminal` moved to the desk.
+  `WorkshopShopController`: opening tweens the camera to face the display, then projects the anchor's corners and
+  sizes `Dim` to that rectangle (dark backlight from `Dim` attribute `ScreenTransparency`), with `UIFit` now fitting the
+  panel inside `Dim` (floor 0.2), so the shop UI sits inside the laptop screen; closing restores `Dim` and the camera.
+- **Deliveries as boxes:** new `ShopSystem.DeliveryService` (+ `Shop.DeliveryConfig`) owns pending deliveries in workshop
+  section `Deliveries` (saved; reset with an Endless run). Parts (`UpgradeService.buyPart`), supplier stock
+  (`ProductInventoryService.Order`) and decor (`DecorationService.Buy`) now charge, then `Ship` a box instead of adding
+  the goods; capacity checks count unopened boxes. Boxes are clones of `ServerStorage.DeliveryBox` (cardboard, hold-E
+  `OpenPrompt` 1.5 s) dropped from 14 studs onto `Markers.Delivery.Spot1-8` (forecourt in front of the office, stacked
+  when full) under `ShopSetup.Deliveries`. Opening calls the handler each service registered (`Register`: rack /
+  backroom / decor storage) and notices `DeliveryOpened` / `DeliveryRackFull` / `DeliveryBackroomFull` /
+  `DeliveryStorageFull` (new keys in `ShiftShared`). Upgrades, staff, lifts and tools stay instant.
+- **Gameplay intro cinematic:** `ArrivalService` publishes `Shop.State.IntroPhase` (Work, Owner, Leave, Done);
+  workers are stood up before the van moves and players are released 3.5 s into the Leave shot.
+  `ArrivalController` drives a scriptable camera from `ArrivalConfig.SHOTS` (van-relative: wide shot of the crew with a
+  slow dolly, then tracking the owner, then tracking the van out of the gate; smoothed every frame), hides the HUD
+  (`HudCover` "Intro"), and hands the camera back at Done.
+- **Lobby departure cinematic:** `DepartureFade` cuts to a wide shot of the crew's van (`TransitionConfig.SHOT_*`,
+  car-relative) with a 3 s dolly, hides `LobbyHud`, fades at 1.8 s; teleport moved to 3.0 s.
+- **Checked in Play:** laptop opens with the UI inside the laptop screen and closes back to the player; tire, decor and
+  stock bought → three boxes dropped; tire box opened (rack 2 → 3), decor box opened (Office Desk in storage);
+  intro Work and Owner shots (HUD hidden), lobby shot with LOADING fade. **Not checked:** opening a stock box, the
+  Leave shot on screen (too short to catch), a real teleport, phones.
+
 ## 2026-11-25 (Syu + Claude): no van ride; the crew pretends to fix the van, the owner drives it away (Lobby + Gameplay, not published)
 
 Design from Aizu, confirmed by Syu: after a room forms, the players stay in the shop and pretend to fix that van;

@@ -2,6 +2,34 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): live-server fixes: attached wheels, smoother driving, CCTV with streaming, retail racks (Gameplay, not published)
+
+Found from a live test with Aizu. Gameplay has StreamingEnabled (min radius 64), and Studio hides what it breaks.
+
+- **Wheels left behind / floating:** spawned cars had their wheels as separate anchored parts, moved by the server
+  every frame apart from the body; on a live server the two streams drift and wheels end up hanging in the air.
+  Now `VehicleService.mount` welds each wheel to its `Tire`, and the tire hangs off `Root` by a `Motor6D`
+  (`ShiftShared.WHEEL_MOTOR`, attributes Axle / Up / Radius / Front). `Spawn` mounts all four, so a car is one
+  assembly. The server no longer spins wheels (WheelSpin is now only used by the intro van).
+- **Natural driving:** new client `ShopClient.WheelController` sets `Motor6D.Transform` from how each car in
+  `Workspace.Vehicles` really moves: wheels roll with distance, front wheels steer from the turn rate
+  (`ShopClientConfig.WHEEL_BASE/STEER_MAX/STEER_SMOOTH`); flat wheels do not roll. `VehicleService.DriveAlong`
+  rounds every corner of a route into a curve (`VehicleConfig.DRIVE_CORNER_RADIUS` 7, `DRIVE_CORNER_STEPS` 8),
+  so cars arc instead of pivoting on waypoints.
+- Vehicle templates, repair and retail assets, decor templates, the intro van and the tire stacks are
+  `ModelStreamingMode = Atomic` (a model arrives whole).
+- **CCTV [F] did nothing live:** `Markers.CCTV` was a Folder of loose parts that streamed in late; the controller
+  read them once, found none, and `open()` returned. It is now a Persistent Model; the controller also adds cameras
+  that arrive later (`ChildAdded`, map redrawn) and calls `RequestStreamAroundAsync` on the selected camera so the
+  far views have geometry.
+- **Retail racks:** `Markers.Retail.StartLayout` moved off the bay 1/2 walkway (they stood in front of the bays'
+  own shelving) to the bay 3 back wall, flush: Fluids z 117, Parts 121.5, Tools 126, Tire display 107.5; Battery
+  stand in the free gap of bay 2 (z 91.5). Each marker has `Was` = its old spot; `DecorationService.relocate` moves
+  saved racks still on those spots (tolerance `DecorationConfig.RELOCATE_TOLERANCE`).
+- Tested in Play: spawned car drives a cornered route with wheels on and turning; flat, jack, remove wheel, fit
+  spare all keep the wheel on its hub; racks seed in the new spots. Not tested: a live server, the full customer
+  arrival, the intro van (still the old wheel spin), wall clock `Face` infinite-yield warning (seen in output).
+
 ## 2026-11-25 (Syu + Claude): lobby car panel width, gacha/supplies/roles boards for real players (Lobby, not published)
 
 - **Car panel:** `LobbyHud.CarPanel` 360 -> 420 wide; the START / OPEN TO ALL / GET OUT row (328 px) no longer runs

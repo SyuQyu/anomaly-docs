@@ -2,6 +2,24 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-24 (Syu + Claude): text padding inside painted panels (Lobby + Gameplay, not published)
+
+- Measured text-to-paint-edge gaps (design px) with every screen open. Fixed: `RoleScreen` ActionButton and
+  `GachaScreen` PullOne/PullTen (label y14 size 34, NEED line y52) so the words sit inside the visible paint; card
+  names (`CardTemplate`/`ResultTemplate` `NameStrip.RoleName`) scale to fit (TextScaled + wrapped, max 11; note: turning
+  TextWrapped off also turns TextScaled off); shop terminal `ItemTemplate` 92 tall with ~12 px above and below;
+  HUD `Prompt` 52 tall with 6 px top/bottom padding on `Content`.
+- **Checked:** role screen and gacha screen screenshots, HUD prompt.
+- 2026-11-25 follow-up (all of yesterday's work was found saved in both places):
+  - **Build mode:** the key-hint row `BuildModeUI.Root.Hint` still sat at y 104 and now overlapped the banner that had
+    moved to y 70 → moved to y 162. `Tray` and `Controls` 20 px from the screen edges.
+  - **Restock:** `RestockUI.Dim.Panel.List.RowTemplate` 92 tall (name y12, description y36, status y62, bar 14 px from
+    the bottom); description scales 12–17 so the upgrade line ("Twice as wide. Holds 2x the stock.") is no longer cut;
+    panel 560x440; `Message`/`Hint` ("[BACKSPACE] CLOSE") 28 px in from the sides. `RestockController` now reads the
+    design size from the panel instead of a hard-coded 560x400.
+  - **Checked in Play:** build mode, pause menu, case files, restock. Case files and other big sheets still touch the
+    top/bottom only in the 576 px Studio window (UIFit FLOOR). **Not checked:** the repair wheel screen.
+
 ## 2026-11-24 (Syu + Claude): UI spacing pass: nothing under the Roblox top bar, margins and padding (Lobby + Gameplay, not published)
 
 Owner: "pastikan tiap tempat ada margin atau padding di bagian luar container". Measured in Play with every screen

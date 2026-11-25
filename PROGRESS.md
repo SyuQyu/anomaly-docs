@@ -2,6 +2,39 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): lobby → gameplay transition (van drives out, fade, arrive in a van and step out) + notice glitch (Lobby + Gameplay, not published)
+
+- **Lobby departure:** new `ServerScriptService.Matchmaking.CarDrive` owns the van's motion. When a car goes
+  `Departing`, `CarService` calls `CarDrive.Start`: the van drives straight out of the garage, turns left at x -64 and
+  heads down the road (x -52, -Z), accelerating (path and timing in new `ReplicatedStorage.Matchmaking.TransitionConfig`).
+  Collisions are off while it drives, so it can't shove bystanders. `CAR 02` has attribute `ExitOffset = 3` so it
+  slides +3 studs while leaving and misses the Christmas tree by gate 2. `CarService` now waits until
+  `TELEPORT_AT` (5.4 s) before `TeleportAsync` (re-checks who is still in the server), and `CarDrive.Reset` puts the
+  van back in its bay on abort and on the 15 s reset.
+- **Lobby fade:** `LobbyClient.DepartureFade` + preplaced `StarterGui.TransitionGui`. At 4.2 s after the drive starts
+  (server time in attribute `DriveStartedAt`) it fades to black in 1.1 s and passes a clone of
+  `Matchmaking.TransitionScreen` to `TeleportService:SetTeleportGui`, so the loading screen stays black. Fades back
+  in if the car returns to `Open`, on the `DepartFailed` notice, or after 25 s.
+- **Gameplay arrival:** `Workspace.ArrivalVan` (rebuilt from the lobby `VanTemplate` meshes; same TEST van, still
+  must be replaced before publishing) parked on the forecourt at (-56, 40), sliding door toward the shop, with
+  `ExitPoints`. `ReplicatedFirst.ArrivalScreen` keeps the arriving black teleport GUI. New
+  `ShopSystem.ArrivalService` seats each player's first character in the van (attribute `Arriving`), waits for the
+  client's `Remotes.ArrivalReady`, holds 1.8 s, slides the door open, unseats (destroys the SeatWeld, waits for
+  `SeatPart` nil) and stands them at the door; 3 s after the last one is out the van closes the door, drives off up
+  the forecourt and moves to ServerStorage. `ShopClient.ArrivalController` fades the black out once seated (in Studio,
+  without a teleport, it clones `Shop.ArrivalScreen` so the fade can still be seen). Numbers in
+  `Shop.ArrivalConfig`. Players joining more than 45 s after the server opened spawn normally.
+- **Notice glitch:** two `UIFit` bugs. The top-bar inset was read once at bind time (0 before the top bar loads), so
+  the notice was fitted 58 px too tall and ran off the top. And a scale change re-wrapped the text, which changed
+  the height, which changed the scale again (0.765 ↔ 0.772 flicker). Inset is now read on every update and
+  `TopbarInset` changes refit; updates are coalesced 0.05 s after layout settles; changes under 0.015 are ignored.
+  `BriefingController` now opens the notice only after `Arriving` turns false (so not during the van scene).
+- **Checked in Play:** lobby: the drive path for CAR 02 (out at z 89.4, turn at x -63, heading -Z at x -52),
+  fade to black, abort fades back in and puts the van home. Gameplay: seated in Seat1, ready → door → standing at
+  (-64, 43), van gone to ServerStorage, notice opens 2.3 s in at scale 0.771 and stays put.
+  **Not checked:** a real teleport (Studio can't reserve servers), so the black loading screen between places and
+  the arriving GUI hand-off are untested; 2+ players in the van.
+
 ## 2026-11-25 (Syu + Claude): last four gameplay screens moved to the paint style (Gameplay, not published)
 
 Audit of every ScreenGui in both places: fonts were already one pair everywhere (SpecialElite + JosefinSans); the

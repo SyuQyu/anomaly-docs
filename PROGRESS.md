@@ -2,6 +2,43 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): intro spots match the lobby, cars drive properly, objectives, web shop, queue, driver visible (Lobby + Gameplay, not published)
+
+- **Intro spots = lobby seats:** the lobby now writes each player's car seat into the match record
+  (`CarService` -> `record.seats[userId]`, optional field, contract VERSION unchanged). Gameplay
+  `MatchSessionService` sets the player attribute `LobbySeat` before spawning them, and `ArrivalService` puts
+  them on the same spot. The gameplay van got `ArrivalVan.WorkSeats.Seat1-6`, copied from the lobby car (same
+  van model, same local offsets and crouch / stand poses); the old 3 work seats were removed (interior seats
+  stay in `Seats`). `ArrivalConfig`: WORK_SPOTS 6, SLOTS 9, cashier 7, chair 8, wander 9 (only for players
+  without a lobby seat, e.g. Studio tests). Owner chose this over Aizu's 4 = cashier / 5-6 = sit + wander.
+- **Cars no longer clip the building, sit on the ground, move smoothly:**
+  - Route into a bay: line up straight outside the gate first (`ShiftConfig.BAY_LINEUP_OFFSET` 46), then drive
+    straight in; backing out goes 48 (`BAY_BACK_OUT`). Measured overlap with the building on the way into bay 1:
+    old route 11 samples, new route 0; back-out and departure 0.
+  - Height follows the ground under the car (raycast each frame, `VehicleConfig.GROUND_*`).
+  - While driving, the car is unanchored and moved by preplaced `Root.DriveAlign` / `Root.DriveTurn`
+    (rigid, server-owned, collision group `DrivingCar` that touches nothing), so clients get smoothed physics
+    replication instead of choppy anchored teleports. Parked cars are anchored exactly as before.
+- **Customer visible while driving to the bay:** every car template has an invisible `DriverSeat` (welded,
+  no touch); `CustomerService.rideToBay` seats the customer there (their Sit animation plays) instead of moving
+  them to `ServerStorage.RidingCustomers`, and stands them up at the door after parking.
+- **Objectives:** the top-left box now has a how-to line (yellow) and a "THEN:" line for every step
+  (`ShiftShared.COPY.ObjectiveHelp`, `MainHUD.TopLeft.Objective.How / Next`). New client
+  `ObjectiveHighlight` outlines what to work on (`UIAssets.ObjectiveHighlight`): the car while finding the
+  fault, the flat wheel, the hood for battery / radiator, the new wheel to check.
+- **Gauge vs battery panel:** the procedure panel hides while the tire change, the gauge reading or the scanner
+  is on screen (`ShopClientConfig.PROCEDURE_BLOCKERS`).
+- **Cashier queue:** 6 spots, starting right behind the person paying and running back along the wall, each
+  facing the one ahead (`Markers.Retail.Queue`), clear of bay 1's car lane.
+- **Laptop:** the desktop now scales up to fill the laptop screen (`LAPTOP_FIT_CEILING`); the shop is restyled
+  as a plain web page (light page, site header, link menu, white product rows, web buttons; paint tags removed
+  from that page only; colours `ShopClientConfig.WEB_*`).
+- Briefing now says the cameras are on the office laptop.
+- Tested in Play: player on WorkSeats.Seat1; bay 1 route / back-out / departure clean; customer stand-in stays
+  seated for the whole drive; objective text + highlight on the flat wheel; web shop render. Not tested: a real
+  lobby -> gameplay teleport with several seats, smoothness on a live server, a full customer visit with the
+  seat, the queue with many shoppers.
+
 ## 2026-11-25 (Syu + Claude): laptop desktop OS, tire-change hints, one player per wheel, cashier reach (Gameplay, not published)
 
 - **Laptop is a desktop now ("JOTHEM 97", our own late-90s look):** the laptop prompt zooms the camera into the

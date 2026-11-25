@@ -2,6 +2,58 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): gacha reel, coins and items in the gacha, gacha/supply NPCs, custom lobby prompt (Lobby + Gameplay contract, not published)
+
+- **Gacha screen = horizontal reel** (layout from the owner's reference, look kept in the game's paint style):
+  `StarterGui.GachaScreen.Content.Reel` (Strip + `ReelCard` template, gold diamond markers, attributes `Cards` 34,
+  `Land` 28, `SpinSeconds` 3.2, `Jitter` 0.3), `Info` under it, `Odds` left, `Side` pull buttons centre,
+  `RobuxSide` right, `Results` grid for x10. Controller `LobbyClient.GachaScreen` lands the reel on the best result
+  by measuring card `AbsolutePosition`; pulls and Robux buttons are blocked while it spins. Old Pool/Detail removed.
+- **Gacha gives coins and items too** (owner: "ga selalu class"). `GachaConfig` (contract, hash **1709153794** in
+  both places) now has a weighted pool per rarity: Common 50 % (150 coins, Tire Patch, Diagnostic Chip, Jump Pack,
+  Energy Drink, Flare), Rare 30 % (Night Owl, 500 coins, Salt Pouch, Pocket Watch, Lucky Charm), Epic 15 % (Medium,
+  Inspector, 1500 coins), Legendary 5 % (The Regular); pity 40 unchanged. Helpers `RollRarity`, `Pick`, `Chance`;
+  `Roll` now returns the reward table. `PlayerDataService.grantPulls` (contract, hash **1989880874** in both places)
+  grants by kind; an item over `MAX_STACK` turns into coins at its shop price (`Converted`). Results carry
+  `Kind/Id/Amount/Rarity/New/Converted`.
+- **Odds list shows every reward with its chance** (Robux random-item rule): `Odds.List` is now a ScrollingFrame,
+  `HeaderTemplate` per rarity + `RowTemplate` per reward. This also fixed the clipped "LEGENDAR".
+- **NPCs instead of buttons:** `Workspace.SupplyBoard` (SupplyKeeper, x -123.5) and `Workspace.GachaBoard`
+  (GachaKeeper, x -131) next to RoleBoard; the BottomBar supply button and the RoleScreen gacha button are gone.
+  GachaBoard sign moved 0.85 forward so the wall conduit no longer cuts through it.
+- **Custom prompt in the lobby:** `StarterGui.PromptHud` + `LobbyClient.PromptController` (port of the gameplay one);
+  every lobby ProximityPrompt (and `ServerStorage.VanTemplate.Door.EnterPrompt`) uses `Style = Custom`.
+- **Checked in Play (lobby):** x1 pull landed on the centre card (4 px off), info and NEW tag right; x10 pull with
+  the new pool: coins 8000 → 6200 matches 3600 cost + 150 + 150 + 1500, items and Night Owl XP in the profile match the
+  result grid. 100 000-roll simulation matches the odds. **Not checked:** Robux pull receipt with the new pool,
+  item-over-stack conversion, the gameplay side (only the contract modules changed there).
+
+## 2026-11-25 (Syu + Claude): cars park in the white bay box, customer rides in, car lift as a garage upgrade (Gameplay, not published)
+
+- **Parking:** the three `ShopSetup.Markers.Bay<n>CarSpot` markers were at x -102, so cars stopped across the yellow
+  line. Measured the painted boxes from above (x -136.5..-104.6, ~24 wide). The default retail shelves
+  (`Markers.Retail.StartLayout`, x -129) stand at the back of the boxes and the owner chose to keep them there, so
+  the spots are now at **x -116** (z 62.5 / 86.5 / 110.7): the longest car (Estate, 23) fills -127.5..-104.5, from
+  just in front of the shelves to the yellow line. `Build.Blocked.Bays` now -127..-83 so nothing can be built where
+  cars park; StartLayout marker 4 (Tire Display) moved to x -130.4 so it stays out of that strip. Retail layout
+  re-checked in Play: all 5 shelves Open, hard paths 10/10.
+- **Customer rides in:** after "accept" the customer walks to the driver door, the door opens, the customer is parked
+  in the new `ServerStorage.RidingCustomers` folder while the car drives to the bay (`Hooks.Accepted` now awaited), then
+  steps out at the car in the bay (door opens via new hook `Alighting` → `CarBodyService.Alight`) and walks to the
+  waiting room. Falls back to the old flow if the car is gone; a customer left inside a vanished car is put back at the
+  talk point. Checked in Play: door opens at 4 s, car leaves at 6 s, parks at exactly (-120.2, 62.5)
+  [before the -116 move], customer out at 17 s.
+- **Car lift (tycoon upgrade, per bay):** `Workspace.TempatMobil` moved to `ServerStorage.LiftTemplate` (attribute
+  `SpotOffset` places it centred on a bay spot). New `ShopSystem.LiftService` (started in `ShopServer`): owned bays in
+  workshop section `Lifts.Bays` (`Bay1..Bay3`, saved with the host's workshop, published as `Workshop.Lifts`), clones
+  the lift into `ShopSetup.Lifts`. `TycoonConfig.LIFTS`: $500 per bay, `HoldScale` 0.75. Bought at the shop terminal:
+  the RACK tab is now **GARAGE** (Parts Rack + one row per bay lift), key `Lift:Bay<n>` (`UpgradeService` key pattern
+  now allows digits). Effect for a car whose `Bay` has a lift: no jack needed to start or finish a tire job
+  (`WorkshopService`, `RepairService` Jack/Lower stages), and every repair prompt hold ×0.75 (`WorkshopService`,
+  `ProcedureService`). Terminal row descriptions now scale (12–17) instead of being cut.
+- **Checked in Play:** GARAGE tab rows, bought Bay 1 lift (bank 2000 → 1500, row INSTALLED, lift at (-116, 62.5)).
+  **Not checked:** a tire or battery job in a bay with a lift (jack-free path and shorter holds), lift on a live save.
+
 ## 2026-11-24 (Syu + Claude): text padding inside painted panels (Lobby + Gameplay, not published)
 
 - Measured text-to-paint-edge gaps (design px) with every screen open. Fixed: `RoleScreen` ActionButton and

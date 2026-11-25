@@ -17,6 +17,9 @@ Endless Night ends on **3 strikes**.
 
 - Odds: Rare 70 % / Epic 25 % / Legendary 5 %. Pity: the 40th pull without a Legendary is a Legendary.
   A duplicate gives that role XP instead.
+- **Changed 2026-11-25 (owner):** a pull is not always a role. Common 50 % / Rare 30 % / Epic 15 % / Legendary 5 %;
+  each rarity holds roles, coin bundles and supply items (`GachaConfig.POOL`), and the gacha screen lists every
+  reward with its exact chance.
 - Cost: 400 coins per pull, 3600 for ten. Robux pulls as developer products.
 - **Robux rules (Roblox policy):** odds shown on the gacha screen before any purchase; the Robux buttons are hidden
   for players whose `PolicyService:GetPolicyInfoForPlayerAsync().ArePaidRandomItemsRestricted` is true.

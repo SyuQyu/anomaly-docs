@@ -2,6 +2,23 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): wheels turn, every car double sided, arrival van leaves up the road (Lobby + Gameplay, not published)
+
+- **Wheels turn while driving:** new `WheelSpin` module (one copy in `ServerScriptService.Matchmaking`, one in
+  `ShopSystem`; server-only, not a contract). `Collect(model)` finds `Wheels/*` (customer cars: wheel Models) and
+  `Wheel_*` parts (vans); `Step(wheels, carFrame, distance)` rolls each wheel about the car's right axis through its
+  own centre by distance / radius, so mirrored left/right wheels work. Used by `CarDrive` (lobby departure),
+  `ArrivalService` (arrival van leaving) and `VehicleService.Drive` / `DriveAlong` (every customer car).
+- **Double sided:** `DoubleSided = true` on every MeshPart of the lobby vans and `VanTemplate` (132), `ArrivalVan`,
+  all four `ServerStorage.VehicleTemplates` and `Shop.RepairAssets.SpareWheel` (295). Drivers left as they were.
+- **Arrival van exit:** instead of 7 s straight then vanishing, it pulls out of the forecourt into the road lane
+  (S-curve to x -46 over 30 studs, `ArrivalConfig.LANE_X` / `PULL_OUT`) and drives north to z 245 (the customer car
+  spawn, deep in the dark; `EXIT_DISTANCE` 205) before it moves to ServerStorage. The lane was measured: asphalt
+  x -49..-41, fence from x -40.
+- **Checked in Play:** arrival van ended at (-46, 245) facing north with the front-left wheel rolled; lobby CAR 01 wheel
+  angle kept changing during the drive. **Not checked:** a customer car's wheels on screen, the wheel direction by
+  eye (sign worked out from the axis maths).
+
 ## 2026-11-25 (Syu + Claude): walk-in zones, NPC drivers, loading screen with bar + skip, van lights (Lobby + Gameplay, not published)
 
 - **Walk-in car rooms (lobby):** `Workspace.LobbyZones.<car name>` = a coloured floor box (fill + neon edges +

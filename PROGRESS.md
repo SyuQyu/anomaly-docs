@@ -2,6 +2,29 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): Endless Night tycoon, step 1: run-only workshop, Rack III, Pro Tools (Gameplay, not published)
+
+Owner's decision: the extra tycoon upgrades exist **only in Endless Night** and **reset every run** (roguelite).
+Order agreed: tools + Rack III first, then the shop that looks better as it levels, then more bays and a bigger shop.
+
+- **Run workshop:** `EconomyService.BeginRun()` (called by `ShiftService.Start` when `Shop.State.Mode` is Endless,
+  before retail starts) swaps in a fresh workshop: bank `TycoonConfig.ENDLESS.StartBank` (250), Rack I, start stock,
+  no staff, lifts, decor or countermeasure, then fires `Adopted` so decor, retail stock and lifts rebuild. While a run
+  is active `commit()` never writes the host's saved `Workshop`, `IsSaved()` is false and a host loading later does
+  not replace the run. The Night Shift workshop in the save is untouched by an Endless night.
+- **Rack III** (`RACK_LEVELS[3]`, `EndlessOnly`): $900, 24 parts, backroom 140 (`ProductConfig.BACKROOM_CAPACITY`
+  now `{40, 90, 140}`; shelf display stays at the Rack II numbers).
+- **Pro Tools** (`TycoonConfig.TOOLS`, `EndlessOnly`): Impact Wrench Set $350 (holds x0.85), Pro Tool Cart $700
+  (x0.7). Workshop field `Tools` (1..3). `UpgradeService.ToolScale()` multiplies every repair hold in
+  `WorkshopService` and `ProcedureService` (on top of lift and workbench). Purchase key `Tools:Upgrade`.
+- `UpgradeService` refuses Endless-only buys outside a run ("Only during Endless Night."). The GARAGE tab shows both
+  rows; outside Endless their button reads ENDLESS ONLY. In a run the terminal message says the run resets.
+- **Checked in Play:** Night Shift: Tools and Rack III refused by the server, Rack II still bought. Endless (Mode
+  set by hand, removed after): run bank 250, Rack I, `Saved` false, 5 default shelves seeded; bought Tools 2 and 3,
+  Rack II and III (bank 3250 → 900), 4th buys refused; backroom capacity 140; GARAGE tab screenshot.
+  **Not checked:** the shorter hold on a real repair prompt, the locked ENDLESS ONLY look in Night Shift, a full
+  teleported Endless run.
+
 ## 2026-11-25 (Syu + Claude): gacha reel, coins and items in the gacha, gacha/supply NPCs, custom lobby prompt (Lobby + Gameplay contract, not published)
 
 - **Gacha screen = horizontal reel** (layout from the owner's reference, look kept in the game's paint style):

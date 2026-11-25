@@ -2,6 +2,25 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): wheel change uses the car's own wheel, auto wrench, service order to-do, shutters (Gameplay, not published)
+
+- **Own wheel:** the line-up / bolting view showed the stock `SpareWheel` and only swapped to the real wheel at the
+  end. New library `ReplicatedStorage.Shop.RepairAssets.Wheels.<Template>.Wheel<FL|FR|RL|RR>` (copies of the
+  `VehicleTemplates` wheels, anchored, no joints). `RepairService` sends `template` + `key` to the client;
+  `RepairWheelController` shows that wheel; `VehicleService.FitWheel` fits it too (spare only as fallback). If a
+  template's wheels change, refresh that folder as well.
+- **Wrench:** reaching the lug-nut stage equips the wrench (`ToolService.Equip`), and with the wrench in hand the
+  socket seats on the current nut by itself; the player only turns.
+- **Service order:** the step to do next is highlighted (yellow fill, red text, "TO DO" tag: first unchecked
+  inspection item before a diagnosis, then the next repair task); finished rows are greyed. Labels use the full
+  row when there is no value and shrink to fit (12-19) instead of "..." (`WorkOrderController.setLine`,
+  `ShopClientConfig.ORDER_*`, `ShiftShared.COPY.Order.TaskNext`).
+- **Bay shutters:** no longer locked for the whole customer visit, so players can shut them when an anomaly shows
+  up. They lock only while a car is driving through (`ShopFrontService.SetPassing`, called around every
+  `ShiftService.drive`), and every drive first waits for the shop to be open again.
+- Tested in Play: fitted wheel = the car's own wheel parts; service order render with the highlight; no errors on
+  start. Not tested: a full hands-on wheel change with the auto wrench, closing shutters mid-customer.
+
 ## 2026-11-25 (Syu + Claude): live-server fixes: attached wheels, smoother driving, CCTV with streaming, retail racks (Gameplay, not published)
 
 Found from a live test with Aizu. Gameplay has StreamingEnabled (min radius 64), and Studio hides what it breaks.

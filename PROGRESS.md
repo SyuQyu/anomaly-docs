@@ -2,6 +2,35 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): walk-in zones, NPC drivers, loading screen with bar + skip, van lights (Lobby + Gameplay, not published)
+
+- **Walk-in car rooms (lobby):** `Workspace.LobbyZones.<car name>` = a coloured floor box (fill + neon edges +
+  invisible `Trigger`) beside each van's sliding door. `CarService` joins a player whose HumanoidRootPart touches the
+  trigger (same `addMember` path as the old prompt); after leaving a car there is a 3 s lock so a player who steps
+  out inside the box isn't pulled back in. `render` colours the box from the zone's `OpenColor` (green, room has
+  space) / `ClosedColor` (red, full, private or leaving) attributes. `EnterPrompt` on every van (and on
+  `ServerStorage.VanTemplate`) is disabled, not deleted.
+- **Walk-in NPC boards (lobby):** `RoleBoard/GachaBoard/SupplyBoard.Zone` (amber box in front of each keeper).
+  `LobbyClient.bindBoard` opens the screen when the local root enters the trigger; it only fires again after
+  leaving and re-entering, and not while in a car or with another screen open. Board prompts disabled.
+- **NPC drivers:** each lobby van has `Driver` (clone of RoleKeeper, posed sitting at the wheel and anchored so it
+  moves with `CarDrive`; the rig uses AnimationConstraints, so the pose is computed from the joint attachments).
+  Old `Seat1` is now `DriverSeat` (Disabled); player seats renumbered: Seat1 front passenger, Seat2-3 middle,
+  Seat4-6 back bench (Seat6 new, in the middle). Capacity 4/6 unchanged. Gameplay `ArrivalVan` got the same
+  (`Driver` from `CustomerTemplates.StandIn`; `ArrivalService` only uses enabled `Seat<n>` seats).
+- **Loading screen:** lobby `TransitionGui` and the teleport GUI show "L O A D I N G" (fades with the black). In
+  gameplay `ArrivalController` puts `Shop.ArrivalScreen` (black, same label position, progress bar, SKIP paint
+  button) over the arriving GUI, waits for `game.Loaded` and for `ContentProvider.RequestQueueSize` to drain
+  (bar = share of the peak queue, 25 s cap), or for SKIP, and only then fires `ArrivalReady` and fades in.
+- **Van lights (gameplay, night):** `ArrivalVan` headlights and taillights are Neon with a SpotLight (front) and a red
+  PointLight (rear).
+- **Checked in Play:** walking into the Gacha zone opened the gacha screen; walking into the CAR 02 zone seated the
+  player in Seat1 with the countdown running; driver visible at the wheel; gameplay: bar filled, faded in, seated
+  in Seat1, stepped out at (-64, 43). **Not checked:** the 3 s re-join lock, the Role and Supply zones, the red
+  closed colour, the gameplay van's lights and driver on screen (the gameplay Studio viewport would not redraw in
+  Edit), a real teleport. Copy note: the car panel still says "Back row (seats 5-6) opens with the VIP pass"; with
+  the new layout one back seat is in the base 4.
+
 ## 2026-11-25 (Syu + Claude): lobby → gameplay transition (van drives out, fade, arrive in a van and step out) + notice glitch (Lobby + Gameplay, not published)
 
 - **Lobby departure:** new `ServerScriptService.Matchmaking.CarDrive` owns the van's motion. When a car goes

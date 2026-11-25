@@ -2,6 +2,27 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): CCTV zoom, night vision, 2 more cameras, HUD coin fix, intro driver (Gameplay, not published)
+
+- **CCTV bar:** `CCTVUI.Screen.TopRight` moved to the top edge ({1,-20},{0,12}), level with the camera title.
+- **Zoom:** Z / X (held), mouse wheel, RT / LT, and new `+` / `-` buttons in `LookPad` (`ZoomIn` / `ZoomOut`,
+  top corners of the pad, for phones). Zoom is per camera, 1x-4x (`ShopClientConfig.CCTV_ZOOM_MIN/MAX/RATE/WHEEL`),
+  pan slows down while zoomed. Readout `Feed.Mode` ("ZOOM 2.6X").
+- **Night vision:** N / L3 or the new `TopRight.NightButton`. Swaps `Lighting.CCTVGrade` for `Lighting.NightVision`
+  (green, brighter); the choice stays on between opens; both effects go off when the monitor closes.
+- **Brighter feed:** `CCTVGrade` Brightness 0.03 -> 0.12, Contrast 0.18 -> 0.10.
+- **New cameras:** `Markers.CCTV.Cam05` "Cashier" (office wall, looks at the counter) and `Cam06` "Bay 1 Gate"
+  (on the header above gate 1, looks at the apron in front of it). Keys 5 / 6 select them directly.
+- **Cameras sit on walls now:** every marker was snapped 1.5 studs off the wall behind it, and each has a visible
+  body in `ShopSetup.CCTVCameras` (housing, hood, lens, red LED, arm, wall plate; no collision, no query). Cam03
+  (waiting room) was floating in the middle of the room and moved to the east wall; Cam01 moved onto the facade corner.
+- **Site map:** tags that would overlap are pushed down (`buildMap`), so CAM 03 / 05 / 06 stay readable.
+- **HUD:** coin pill now uses the cash pill's image and width floor; both right-aligned (`MainHUD.TopRight`).
+- **Intro:** when the van parks in bay 1 or 3, the NPC driver is shifted with it (`ArrivalService.park`).
+- Copy in `ShiftShared.COPY.Cctv` (Night, Zoom, NightOn, new hints).
+- Tested in Play: bar position, zoom (keys), night vision toggle, Cam05 / Cam06 views, map tags, coin HUD.
+  Not tested: mouse wheel and gamepad zoom, phone layout of the +/- buttons, full intro with a bay 1 teleport.
+
 ## 2026-11-25 (Syu + Claude): laptop shop, deliveries as boxes, intro cinematics (Lobby + Gameplay, not published)
 
 - **Order laptop (gameplay):** `ShopSetup.Office.OrderDesk` in the office corner by the door (where Syu put a

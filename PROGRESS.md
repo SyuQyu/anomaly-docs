@@ -2,6 +2,61 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): no van ride; the crew pretends to fix the van, the owner drives it away (Lobby + Gameplay, not published)
+
+Design from Aizu, confirmed by Syu: after a room forms, the players stay in the shop and pretend to fix that van;
+the screen goes black in place; in gameplay it is night, the van's owner gets in and leaves, then the shift starts.
+Slots by player count apply in gameplay only: 1-3 fix the van, 4 at the cashier, 5 sitting, 6 free.
+
+- **Animation:** generated with the Studio animation generator from the owner's words ("pura pura lagi benerin
+  mobil"), published as `rbxassetid://120812991272161` (standing, hands working forward). Preplaced as
+  `ReplicatedStorage.Matchmaking.FixAnimation` (lobby) and `ReplicatedStorage.Shop.FixAnimation` (gameplay).
+  The generator's clip stays in gameplay `ServerStorage.RBX_ASSISTANT_ANIMGEN`; the rig it inserted was deleted.
+- **Lobby:** the six van seats are now invisible "work spots" around each van (front wheels, rear wheels, front
+  bumper, rear engine), 1.3 studs off the floor so a seated player stands at normal height, facing the van. New
+  `Matchmaking.WorkPose` plays the fix animation (Action4, looped, random start) when a seat gets an occupant and
+  stops it when it empties; called from `CarService.onOccupantChanged`. Room logic is unchanged (still seat based,
+  jump or GET OUT to leave). Drivers and `DriverSeat` removed. Departure no longer drives: `CarService` stamps
+  `DepartStartedAt`, the screen fades at 0.3 s and teleport is called at 1.8 s (`TransitionConfig`, now only fade
+  numbers). `CarDrive` and the lobby `WheelSpin` were deleted (no references left). `LobbyCopy`: "OPEN - WALK IN",
+  "Working on the van.", "The night shift is starting.", VIP hint says spots 5-6.
+- **Gameplay intro (`ShopSystem.ArrivalService`, rewritten):** `ArrivalVan` now parks in Bay 2 nose-in with Seat1-3
+  as work spots (right-front wheel, front bumper, rear) so the driver side stays clear. Markers in
+  `ShopSetup.Markers.Intro`: `Cashier`, `Wander`, `OwnerStart`, `OwnerDoor`, and `Sit` (ObjectValue to
+  `Office.Waiting.Chair1`). Each player's first character takes the next free slot (1-3 work spot + animation,
+  4 cashier, 5 chair, 6 near the van), `Arriving` = true. Once the first player is ready (loading done or SKIP),
+  2.5 s later the owner (`CustomerTemplates.StandIn`, walk animation) walks from the office door to the driver door
+  and gets in (the posed `Driver` appears), everyone is released (`Arriving` false, the notice opens) and the van
+  reverses out of the bay, swings south, pulls into the lane and drives north to z 245, wheels turning, then moves
+  to ServerStorage. Players joining after that spawn normally. Numbers in `Shop.ArrivalConfig`.
+- **Checked in Play:** lobby: walking into the CAR 02 box put the player at the front-left wheel at standing height
+  with the fix animation playing; START faded to black in place with LOADING (van stayed). Gameplay: player at the
+  right-front wheel working, owner walked to the driver door, release at 4.1 s, van ended at (-46, 245) with the
+  driver; screenshot of the work phase. **Not checked:** slots 4-6 (needs 4+ players), several players in one lobby
+  room, a real teleport.
+- **Follow-up, same day:** the intro van now parks in the bay of the lobby car the crew used. Lobby cars carry
+  attribute `Bay` (CAR 01 = 1, CAR 02 = 2, CAR 03 = 3) and `CarService` writes `bay` into the match record (extra
+  field, older servers ignore it). Gameplay `MatchSessionService` stores it as `Shop.State` attribute `IntroBay`;
+  `ArrivalService` waits up to 4 s for it before placing the first player (behind the loading screen), then moves the
+  van and the `OwnerApproach` / `OwnerDoor` / `Wander` markers from Bay 2 (`HOME_BAY`) to that bay. The owner now walks
+  `OwnerApproach` (behind the van on the driver side) then `OwnerDoor`, because in Bay 1 the straight line ran into
+  the van. Checked in Play with `IntroBay` = 1 set by hand (removed after): van in Bay 1, player at its wheel, owner
+  reached the driver door, van reversed out and turned north.
+- **Crouch at the tyre (Aizu's voice note: "yang satu lagi di ban"):** second generated animation
+  `rbxassetid://138119729393593` ("animasi jongkok di ban"), preplaced as `CrouchAnimation` next to `FixAnimation`
+  in both places. Seats with attribute `Pose = "Crouch"` (0.5 studs lower) play it: lobby Seat1/4/5/6 (the four
+  wheels), gameplay Seat1/Seat3; `WorkPose` and `ArrivalService` pick the animation from that attribute. Clip
+  sources for both animations: gameplay `ServerStorage.RBX_ASSISTANT_ANIMGEN` (`puraPuraLagiBenerinM`,
+  `animasiJongkokDiBan`). Checked in Play: lobby CAR 02 Seat1 crouching at the front wheel.
+- **Intro van faces out like the lobby vans:** `ArrivalVan` now parks nose to the gate. Work spots: right-front
+  wheel (crouch), front-right corner (stand, outside the drive path), left-rear wheel (crouch). The owner walks from
+  the office straight to the driver door (south side; `OwnerApproach` removed). The van drives forward out of the
+  gate, turns right at x -60 (radius 14) into the lane at x -46 and goes north to z 245 (`TURN_X`, `TURN_RADIUS`;
+  the reverse settings are gone). Checked in Play (Bay 2): owner reached the door, van left east then north.
+- **Stray shelves:** `Shelf_Level_1/2/3` and one more `Model` with the same rack mesh stood loose in the gameplay
+  Workspace root on the bay entry line (x -98 / -87), referenced by nothing. Moved (not deleted) to
+  `ServerStorage.ShelfSourceModels`. The rack against the back wall at (-136, 82) was left in place.
+
 ## 2026-11-25 (Syu + Claude): wheels turn, every car double sided, arrival van leaves up the road (Lobby + Gameplay, not published)
 
 - **Wheels turn while driving:** new `WheelSpin` module (one copy in `ServerScriptService.Matchmaking`, one in

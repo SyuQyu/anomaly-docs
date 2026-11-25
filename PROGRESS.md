@@ -2,6 +2,28 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): last four gameplay screens moved to the paint style (Gameplay, not published)
+
+Audit of every ScreenGui in both places: fonts were already one pair everywhere (SpecialElite + JosefinSans); the
+lobby was all paint style. Four gameplay screens were still flat or on the 2026-11-19 double-frame texture:
+
+- **DialogueGui:** `Box.Shade` (flat gradient bar) replaced by the panel paint (`97262305096663`, sliced) + grain;
+  `Choices.OptionTemplate` is now a PaintButton (brush strip `79113488936779` + `Motion` UIScale, hover/press from
+  PaintUI), stroke removed, key number grey. `DialogueController` hover-stroke lines and the two
+  `DIALOGUE_OPTION_*STROKE` config values removed. Choices moved up to y -142 so they clear the painted box.
+- **CooperativeUI (TAB, crew list):** was a light grey box with a stroke. `Panel` is now an ImageLabel that carries
+  the panel paint itself (a child image with a scale size made AutomaticSize grow on every layout pass), content
+  moved into `Panel.Body` (keeps the UIListLayout); light text colours; `CrewController` reads through `Body`.
+  Role label 15 px so "MECHANIC" no longer runs into the status dot.
+- **WorkOrderUI:** the paper uses the briefing's cream sheet (`96632668928135`) with its shadow; the board is the dark
+  panel paint; clip darker. **Bug fixed on the way:** `Clipboard` carried the `PaintPanel` tag, whose open tween
+  (deferred Visible signal) ran after `WorkOrderController`'s slide and pulled the order back to its hidden position,
+  so the service order never showed. Tag removed; the controller's own slide is the only animation now.
+- **DiagnosticUI:** `Scanner` and `Gauge` frames swapped from the old double frame to the panel paint.
+- **Checked in Play:** a real customer: painted subtitle and four painted choices, chose "I'll take a look", the
+  service order slid in (x -20) on the cream paper; TAB crew panel. Scanner and gauge checked in Edit only.
+  Noticed, not changed: checklist lines are cut ("Tire pressure,...") in the service order.
+
 ## 2026-11-25 (Syu + Claude): Endless Night tycoon, step 2: the shop looks better as it levels (Gameplay, not published)
 
 - **Renovation** (`TycoonConfig.RENOVATION`, `EndlessOnly`, resets with the run like the rest of the Endless

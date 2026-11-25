@@ -2,6 +2,33 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): laptop desktop OS, tire-change hints, one player per wheel, cashier reach (Gameplay, not published)
+
+- **Laptop is a desktop now ("JOTHEM 97", our own late-90s look):** the laptop prompt zooms the camera into the
+  screen, boots (logo + bar), then shows a desktop: wallpaper, icons (Parts Shop, Cameras), taskbar with SHUT DOWN
+  and the shift clock. **Parts Shop** opens a browser window ("WebSurfer"): the address types itself
+  (`http://www.jothem-supply.com/orders`), a load bar runs, then the shop page appears inside the window; X or
+  Backspace closes the window. **Cameras** opens the CCTV feed; exiting it returns to the desktop.
+  - New owner `ShopClient.LaptopController` (prompt `ShopPrompt`, camera move, screen fit, boot / desktop /
+    browser / camera states, close keys). `WorkshopShopController` now only draws the shop page
+    (`Show` / `Hide`); `CCTVController.Open(onClosed)` added.
+  - UI preplaced in `WorkshopShopUI.Dim.Os` (Boot, Wallpaper, Icons.IconTemplate with one glyph per app,
+    Taskbar, Browser with TitleBar / AddressBar / Content / StatusBar). The shop `Panel` moved into
+    `Browser.Content` (Fit 0.6625, its own X hidden). Wording `ShiftShared.COPY.Laptop`; apps and timings
+    `ShopClientConfig.LAPTOP_*`.
+  - The CRT box on the office counter (`ShopSetup.Office.CctvMonitor`) is removed: cameras are on the laptop.
+    The buyable CCTV Monitor decor still opens the cameras directly.
+- **Tire change hints:** nut step text per device (PC: scroll down or circle the mouse; phone: draw circles;
+  controller: spin the left stick). PC can now tighten with the **mouse wheel** (`NUT_SCROLL_STEP` 1.1 rad per
+  notch; scrolling too fast still slips).
+- **One player per wheel:** a second player at a wheel someone is changing gets "Someone is already working on
+  that." The helper / hold-the-tire join was removed (`RepairService.joinHelper` deleted).
+- **Cashier reach:** customer `TalkPrompt` 9 -> 12 studs (`CustomerTemplates.StandIn`), so the customer at the
+  window can be talked to from behind the counter.
+- Tested in Play: laptop boot, desktop, browser load into the shop, Cameras and back to the desktop, Shut Down
+  restores the camera; no errors on start. Not tested: buying through the browser, mouse-wheel nut turning in a
+  real wheel change, the busy lock with two players, talking to a customer from inside.
+
 ## 2026-11-25 (Syu + Claude): wheel change uses the car's own wheel, auto wrench, service order to-do, shutters (Gameplay, not published)
 
 - **Own wheel:** the line-up / bolting view showed the stock `SpareWheel` and only swapped to the real wheel at the

@@ -2,6 +2,23 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): Endless Night tycoon, step 2: the shop looks better as it levels (Gameplay, not published)
+
+- **Renovation** (`TycoonConfig.RENOVATION`, `EndlessOnly`, resets with the run like the rest of the Endless
+  workshop): Bare Garage → **Clean Garage** $600 (3 extra ceiling lamps over the bays, 3 tool pegboards on the west
+  wall; Appeal +4, Light +2) → **Night Garage** $1200 (3 more lamps over the retail aisle, amber neon strip along the
+  west wall, OPEN ALL NIGHT neon sign above bay 2 outside; total Appeal +12, Comfort +2, Light +5). The numbers feed
+  `DecorationService.Totals()`, so they work through the existing effects: more shoppers and buy chance (appeal),
+  comfort tips, fewer anomalies (light).
+- Models are preplaced templates `ServerStorage.RenovationTemplates.Level2/Level3` (lamps are clones of the existing
+  `Garage.Lamp` model); new `ShopSystem.RenovationService` (started in `ShopServer`) clones the owned levels into
+  `Workspace.ShopSetup.Renovation` and clears them when a new run starts (`Adopted`). Workshop field `Renovation`,
+  purchase key `Renovate:Upgrade`, third row in the GARAGE tab (ENDLESS ONLY outside a run).
+- **Checked in Play** (Mode set to Endless by hand, removed after): both levels bought (bank 3250 → 1450), appeal
+  13 → 17 → 25, third buy refused, models appear; interior screenshot; sign checked in Edit (text fits one line).
+  **Not checked:** the effect on shopper numbers over a real night, Night Shift refusal of this key (same code path as
+  Tools, which was checked).
+
 ## 2026-11-25 (Syu + Claude): Endless Night tycoon, step 1: run-only workshop, Rack III, Pro Tools (Gameplay, not published)
 
 Owner's decision: the extra tycoon upgrades exist **only in Endless Night** and **reset every run** (roguelite).

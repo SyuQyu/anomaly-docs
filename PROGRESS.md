@@ -2,6 +2,18 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-25 (Syu + Claude): lobby car panel width, gacha/supplies/roles boards for real players (Lobby, not published)
+
+- **Car panel:** `LobbyHud.CarPanel` 360 -> 420 wide; the START / OPEN TO ALL / GET OUT row (328 px) no longer runs
+  past the right edge. Buttons 108 / 150 / 98.
+- **Boards did not open for teammates (Aizu):** the lobby has StreamingEnabled, and `LobbyClient.bindBoard` waited only
+  10 s for each board and looked for its prompt and `Zone.Trigger` once. In Studio everything is there at once; on a
+  live server the parts stream in later, so binding gave up and neither the prompt nor the floor pad opened anything.
+  Fix: `RoleBoard`, `GachaBoard`, `SupplyBoard` are `ModelStreamingMode = Persistent`, and `bindBoard` runs in its
+  own thread and waits (no timeout) for the board and its prompt.
+- Tested in Play: panel layout, standing on the gacha pad opens `GachaScreen`. Not tested: a live server with a
+  second player (needs a publish by the owner).
+
 ## 2026-11-25 (Syu + Claude): CCTV zoom, night vision, 2 more cameras, HUD coin fix, intro driver (Gameplay, not published)
 
 - **CCTV bar:** `CCTVUI.Screen.TopRight` moved to the top edge ({1,-20},{0,12}), level with the camera title.

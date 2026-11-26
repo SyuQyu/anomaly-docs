@@ -2,6 +2,31 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-26 (Aizu + Claude): car door open / shut sounds (Gameplay, not published)
+
+- Clip: Pro Sound Effects "2007 Dodge Charger 6" (9113015345), driver-side door open then shut, 3 s.
+  Cut by a loudness trace into two Sounds in `ReplicatedStorage.Shop.VehicleAudio`:
+  - `DoorOpen`: region 0.6–1.3 s (the latch), volume 0.2.
+  - `DoorClose`: region 1.95–2.9 s (the slam at ~0.12 s in), volume 0.15.
+  - Both roll off InverseTapered 8–90. Levels were matched to the engine start clip.
+- `CarBodyService.openDriverDoor` (server) clones the open sound onto the door's `Hinge` part when the door
+  opens. It clones the close sound `DOOR_CLOSE_SOUND_DELAY` 0.38 s after the door starts shutting, so the slam
+  lands as the 0.5 s close tween ends. Each clone is destroyed when it ends.
+  - This covers both getting out (`Alight` / `CustomerExiting`) and getting in (`Board`).
+  - The Sedan has no hinged door, so its sounds play from the car's `Root` with the same timing.
+  - The open sound plays once even when `Alight` and the `CustomerExiting` watcher both fire (`DoorOpen` flag).
+  - Settings are in `CarBodyConfig`: `SOUND_FOLDER`, `SOUND_ROOT`, `DOOR_SOUNDS`, `DOOR_CLOSE_SOUND_DELAY`,
+    `DOOR_SOUND_LIFETIME`.
+- **Tested in Studio Play (solo):**
+  - A real roadside arrival (Estate): the open sound played on the hinge as the customer got out, and the
+    close sound ~2 s later.
+  - `Board` on the same car: the client heard both. The open sound was at 0.77 s in its region and the close
+    sound at 2.12 s, right on the slam.
+  - A Sedan copy with `Alight` called twice: one open and one close sound, both on `Root`.
+  - No sound clones left behind and no new errors.
+- **Not tested:** hearing the mix by ear, a live server with several players, and a customer boarding through
+  the real job flow (the `Board` call was made by test script).
+
 ## 2026-11-26 (Aizu + Claude): one-word objective + single guide marker, prompts beside their target, retail from Shift 02, car engine audio (Gameplay, not published)
 
 Backups of every script touched, and of MainHUD: `ServerStorage.ScriptBackups.2026-11-26_BeforePolish`.
@@ -61,7 +86,8 @@ Backups of every script touched, and of MainHUD: `ServerStorage.ScriptBackups.20
   - Roll-off is InverseTapered 12–160 studs. Settings: `ShopClientConfig.VEHICLE_AUDIO`.
   - A single Heartbeat connection runs only while some engine is on or fading. Entries are cleaned when a car
     is removed.
-  - No brake, tire-roll or door sounds: only hard skids exist among licensed sounds (see open items).
+  - No brake or tire-roll sounds: only hard skids exist among licensed sounds (see open items). Door sounds
+    were added afterwards (next entry).
 - **Studio-only debug:** `ServerStorage.ShiftDebug` (BindableFunction). `Invoke("Skip")` ends the current shift
   before its next customer. `Invoke("Info")` returns {Number, Ended, Retail}.
 - **Tested in Studio Play (solo):**

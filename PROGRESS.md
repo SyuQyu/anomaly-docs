@@ -2,6 +2,98 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-26 (Aizu + Claude): one-word objective + single guide marker, prompts beside their target, retail from Shift 02, car engine audio (Gameplay, not published)
+
+Backups of every script touched, and of MainHUD: `ServerStorage.ScriptBackups.2026-11-26_BeforePolish`.
+
+- **Objective = one word.** `MainHUD.TopLeft.Objective` keeps `Title` + `Line1` only; `Line2`, `How` and `Next`
+  (the "THEN:" line) were deleted. Words in `ShiftShared.COPY.ObjectiveWords`: OPEN, WAIT, TALK, INSPECT,
+  REPAIR, VERIFY, CALL, DECIDE, SHOP, STOCK, REPORT. `ObjectiveHelp` / `ObjectiveThen` were removed; the old
+  `COPY.Objectives` sentences are now unused but kept.
+- **One guide target.** New client module `ShopClient.ObjectiveState`:
+  - `Resolve()` returns the word key and the one target, read only from replicated state: `Shift`,
+    `WorkOrder` (Status, `Checked`, `Scanned`, Finding), `ShopOpen`, `Shoppers`, the customers' `State` /
+    `OrderId` attributes and their `TalkPrompt`.
+  - `Watch()` re-resolves on those changes, coalesced with `task.defer`. No polling.
+  - Targets:
+    - INSPECT: the next unchecked wheel (FL, FR, RL, RR, the same order as the service-order checklist), then
+      the hood for the scan.
+    - REPAIR / VERIFY: the flat wheel, or the hood for battery and radiator jobs.
+    - TALK / CALL / DECIDE: the customer.
+    - SHOP: a shopper whose till prompt is on.
+    - OPEN: the shutter panel.
+    - WAIT / STOCK / REPORT: no target.
+- **Guide drawing.** `ObjectiveHighlight` was rewritten to `Set(key, target, visible)`:
+  - One Highlight on the target.
+  - One arrow `ReplicatedStorage.Shop.UIAssets.GuideMarker` (BillboardGui) above the target's top.
+  - An edge arrow `StarterGui.GuideGui.Edge` when the target is off screen. Its render step is bound only while
+    a target exists.
+  - Hidden while the HUD is covered (briefing, report, service-order card) or the repair UI is open. It drops
+    the target when the target is removed.
+  - For OPEN, the existing "SHUTTER PANEL ▼" billboard is used as the arrow. `ShopGuideController` is now just
+    `Show(on)`, driven by the guide.
+  - Settings: `ShopClientConfig.GUIDE`.
+- **Prompts beside their target.** `MainHUD.BottomLeft.Prompt` moved into a new `MainHUD.PromptAnchor` (with
+  its own `Fit` UIScale). `BottomLeft` keeps the notices.
+  - `PromptController` keeps every shown Custom prompt as a candidate and shows only the nearest one. It
+    switches only when another is `SWITCH_MARGIN` 1.5 studs closer, and never while one is held.
+  - The box is placed on screen next to the prompt's attachment or part, every frame, only while shown.
+  - It is kept inside the screen edges. On touch, it also stays clear of the joystick, the jump button and the
+    bottom strip (`TOUCH_SAFE_*`).
+  - Tapping or clicking the box still holds the prompt. Settings: `ShopClientConfig.PROMPT`.
+- **Retail from Shift 02.** `ShiftConfig.RETAIL_UNLOCK_SHIFT = 2`. `RetailCustomerService.Unlocked()` uses
+  `shift.Number`, and Endless mode always counts as unlocked.
+  - It gates the shopper spawn loop and the service customers' basket shopping (`HybridShop`).
+  - Shelves, stock, the supplier and the till code are unchanged.
+- **Engine audio.** The server only sets the car attribute `Engine` (true/false):
+  - On at spawn.
+  - Off when the customer gets out (`VehicleConfig.ENGINE_OFF_STATES`), when the customer alights in the bay,
+    and on quarantine fade.
+  - `ShiftService.drive` turns it on and waits `ENGINE_START_DELAY` 1.3 s before moving.
+  - The server no longer plays `EngineSound` itself.
+- **Client audio.** New `ShopClient.VehicleAudioController` plays, per car, from the car's `Root`:
+  - The start clip, then the `EngineSound` idle loop. Its pitch (1 → 1.5) and volume (0.7 → 1.25) follow the
+    car's measured speed.
+  - The stop clip, then a fade-out.
+  - Clips are in `ReplicatedStorage.Shop.VehicleAudio`: `EngineStart` / `EngineStop`, both PSE 9125345260
+    (1987 Jeep Wrangler start / idle / off). Regions are 0.2–2.0 s and 5.0–6.6 s, picked from a loudness
+    trace.
+  - Roll-off is InverseTapered 12–160 studs. Settings: `ShopClientConfig.VEHICLE_AUDIO`.
+  - A single Heartbeat connection runs only while some engine is on or fading. Entries are cleaned when a car
+    is removed.
+  - No brake, tire-roll or door sounds: only hard skids exist among licensed sounds (see open items).
+- **Studio-only debug:** `ServerStorage.ShiftDebug` (BindableFunction). `Invoke("Skip")` ends the current shift
+  before its next customer. `Invoke("Info")` returns {Number, Ended, Retail}.
+- **Tested in Studio Play (solo):**
+  - Every word and target, including the off-screen arrow on CALL:
+    - The real flow covered OPEN, WAIT, TALK and INSPECT, then CALL, DECIDE and back to WAIT.
+    - The other states were set on the client: wheel order, hood for the scan, REPAIR / VERIFY for tire,
+      battery and radiator.
+  - Prompt placement: the box sits 28 px right of the target's screen point (shutter, customer, call-back).
+    Walking away hides it. On the shutter's OnePerButton prompts the box always matches what E triggers.
+  - Shift 01 had no shoppers in 60 s; before this change they came after 14–24 s.
+  - Shift 02 had shoppers with baskets. One was rung up at the till: bank $0 → $30, 1 sale. Shift 03 also has
+    retail.
+  - Audio, measured on the client:
+    - Arrival: idle, up to 1.5× while driving, back to idle at the curb, then stop clip + fade when the
+      customer gets out.
+    - Bay drive: start clip, idle, stop clip after parking.
+    - Release departure: start, reverse out, drive off, car removed with no car sound left playing.
+  - Roadside stop, bay 1 route, reverse out and departure all ran in the full visit (the order was marked
+    repaired by a temporary test script).
+  - Phone (iPhone 17 Pro simulator, 750×381): HUD word and prompt beside the shutter button, screenshot checked.
+  - No new errors.
+- **Not tested:**
+  - A real touch screen. The simulator reports a keyboard, so the touch-safe placement wasn't exercised.
+  - Gamepad.
+  - Multiplayer: each player's guide reads shared state, so it should stay in sync, but this wasn't run with
+    two players.
+  - The quarantine fade audio.
+  - Bays 2 and 3 in a live visit (checked by script yesterday).
+  - Hearing the mix by ear.
+- **Seen while testing (not changed):** teleporting a character right next to a customer can make the engine
+  show the Talk prompt for one frame and then hide it. Walking up is steady.
+
 ## 2026-11-26 (Aizu + Claude): customer cars pull over along the road (Gameplay, not published)
 
 - Customer cars used to stop crosswise to the road, nose into the garage. They now park along the curb,

@@ -2,6 +2,29 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-26 (Aizu + Claude): customer cars pull over along the road (Gameplay, not published)
+
+- Customer cars used to stop crosswise to the road, nose into the garage. They now park along the curb,
+  facing the way they drove in, as Aizu drew on a screenshot.
+- `Markers.Arrival.CustomerVehicleStop` now faces -Z; its position is unchanged (-70, 86). The FutureFootage
+  CCTV anomaly reads the same marker, so its fake car matches.
+- `ArrivalPath` 1..3 moved to (-48, 138), (-58, 118), (-70, 103), so the car leaves the lane and runs straight
+  along the curb into the stop.
+- Bay route (`ShiftService.moveToBay`): if the bay's lineup point is less than `ShiftConfig.BAY_TURN_ROOM` 14
+  ahead of the car, it first reverses straight back along the curb (`REVERSE_SPEED`), then drives forward and
+  turns left into the bay. Bay 1 needs no reverse; bay 2 backs up to z 100.5 and bay 3 to z 124.7. The parked
+  pose in the bay is unchanged (it comes from the bay spot).
+- The customer gets out of the right-hand driver door on the road side (EXIT_OFFSET is relative to the car)
+  and walks round the front to `CustomerTalkPoint`.
+- Tested in Play:
+  - A real shift (service window opened) brought car 1 in along the new path. It settled at (-70, 86) facing
+    -Z, and the customer reached the talk point. Screenshot checked.
+  - A script drove a Sedan from the stop to bays 1, 2 and 3. Each ended exactly on its spot facing -X; the
+    path stayed between x -116 and -70 and z 62.5 to 124.7, with no collidable parts in that strip.
+  - No new errors.
+- Not tested: a full visit with an accepted order (the real bay drive with the customer seated), and a live
+  server.
+
 ## 2026-11-25 (Syu + Claude): intro spots match the lobby, cars drive properly, objectives, web shop, queue, driver visible (Lobby + Gameplay, not published)
 
 - **Intro spots = lobby seats:** the lobby now writes each player's car seat into the match record

@@ -1,8 +1,101 @@
 # Physics NPC car: prototype handoff
 
-Status on 2026-11-27 (Aizu + Claude): **one physics car prototype plus an AI driver, tested on an isolated test
-track.** Nothing here is wired into the live customer flow yet. Customer cars still use `VehicleService.DriveAlong`
-(the anchored root steered by AlignPosition / AlignOrientation). Gameplay place, not published.
+Status on 2026-11-27 (Aizu + Claude), Gameplay place, not published:
+
+- **Saloon customers now physically drive in.** A Saloon customer without a flat tyre arrives in `SaloonPhysics` and
+  drives the arrival leg itself (see "Live arrival" below).
+- **Everything after the stop uses the old mover:** bay drive, inspection, repair, release and departure. The
+  physics car is "frozen" into one rigid anchored body for those legs.
+- **Other customers are unchanged:** Estate, Roadster and every flat-tyre customer use the old cars and the old
+  mover.
+
+## Live arrival (2026-11-27)
+
+| Thing | Path |
+|---|---|
+| Physics Saloon | `ServerStorage.VehicleTemplates.SaloonPhysics` (built from `Saloon` like the Sedan prototype; doors, hood and trunk still swing; RWD profile `Saloon`) |
+| Bridge | `ServerScriptService.ShopSystem.PhysicsCarService`: `TemplateFor`, `IsPhysics`, `CanDrive`, `ShouldDrive`, `Freeze`, `Release`, `Drive`, `WheelBottom` |
+| Settings | `VehicleConfig.PHYSICS_*` |
+| Physics approach path | `Workspace.ShopSetup.Markers.Arrival.PhysicsArrivalPath` 1–5 (new). The old `ArrivalPath` is untouched and still used by the other cars. |
+| Backups | `ServerStorage.ScriptBackups.2026-11-27_BeforePhysicsArrival` (VehicleService, VehicleConfig, ShiftService, CarBodyService) |
+
+### How it works
+
+- **Spawn:** `VehicleService.Spawn` uses `PHYSICS_TEMPLATES[template]` when `PHYSICS_ENABLED` and the customer has
+  no flat tyre.
+  - The car is frozen straight away: wheels and knuckles get a `CarWeld` to `Root`, and `Root` is anchored.
+  - So `PivotTo`, `Prepare` and the rest of the spawn code work as before.
+- **Arrival:**
+  - `ShiftService.serve` uses `PhysicsArrivalPath` for a car that `CanDrive`.
+  - `VehicleService.DriveAlong` hands the leg to `PhysicsCarService.Drive` when the car's `CustomerState` is in
+    `PHYSICS_DRIVE_STATES` (only `VehicleArriving` today).
+  - `Drive` waits `PHYSICS_SETTLE_FRAMES` (2) physics frames, releases the car, and drives it with `PhysicsDriver`.
+  - On `Arrived` it freezes the car again where it physically stopped.
+- **Fallback:** if a physics leg ends any other way (for example `OffRoute`), the car gets `PhysicsFallback` and
+  finishes the same leg with the old mover.
+- **Ride height:** the old mover's `groundOffset` uses `PhysicsCarService.WheelBottom` for physics cars, the lowest
+  ball-collider bottom.
+- **Collision groups:**
+  - New `CustomerCars` (physics car parts) and `CarPassThrough`; the two collide with nothing of each other.
+  - Two roadside trees (`Workspace.Tree...Mesh_AlpTrees4.MeshPart` at (−9.5, 122) and (−12.8, 216.5)) are now
+    `CarPassThrough`. Players still collide with them as before.
+  - The driver's obstacle box-cast uses the car's own collision group.
+
+### Problems found and fixed while wiring
+
+1. **Flung at spawn (same frame).**
+   - Releasing the car in the same frame it was spawned and moved threw it 200 studs. Two frames' wait is calm
+     (tested both ways).
+   - Also: `AssemblyMass` reads as infinite right after unanchoring, so the controller now adds up mass and centre of
+     mass from the parts.
+2. **Tree collision boxes on the road.**
+   - Those two trees use CollisionFidelity Box, so an invisible box reaches into the road at z 210–235 and z ≈ 140.
+   - Old cars never noticed: their `DrivingCar` group collides with nothing.
+   - Fixed with the collision groups above. The trees' shape and their collision with players are unchanged.
+3. **Old route too tight for a real car.**
+   - The old markers need a 22-stud lane change in about 35 studs, then only 17 straight before the stop.
+   - The car crawled at 1–2 studs/s and stopped 3.9° off parallel.
+   - The new `PhysicsArrivalPath` drifts toward the stop lane early: it stays 2.4 studs off the chain-link fence at
+     x ≈ −67 (z ≥ 152), and leaves 26 studs of straight.
+   - Corners are now rounded with the car's real turning radius (`CORNER_RADIUS_SCALE` 1.2 × wheelbase ÷ tan(lock ×
+     margin)).
+4. **Floating in the bay.**
+   - The old mover sized ride height from the bounding box. A rolled ball/tyre's tilted box hangs ~0.6 lower, so
+     the car sat 0.56 studs above the floor.
+   - Fixed by `WheelBottom`; wheels now 0.00–0.04 off the floor.
+
+### Tested (solo Studio Play)
+
+The test temporarily forced every template to `SaloonPhysics` and the fault to DeadBattery. Both were put back.
+
+- **Arrival** (two identical runs):
+  - About 12 s from spawn to stop, top speed 24.6.
+  - Stopped 0.16 studs short of `CustomerVehicleStop`, 0.08 sideways, heading 0.45–0.56° off.
+  - Peak roll 0.6°, pitch 0.2°.
+  - No fallback used, wheels on the road.
+- **Full visit:** customer got out, dialogue, job accepted, bay drive into bay 1 (centred, wheels on the floor),
+  verified (temporary script), called, paid, released, reversed out, departed, car removed.
+- No console errors from these scripts.
+- **Not seen again:** one earlier run had a single 12° pitch jolt near (−55, 120). Nothing solid was found there,
+  and the next three runs never repeated it.
+
+### Not tested / not done
+
+- A natural random Saloon customer with the normal settings. Only the forced mapping was run; the code path is the
+  same.
+- Bays 2 and 3.
+- Quarantine fade-out on a physics car.
+- Declined customers' departure.
+- Multiplayer and phones.
+- **Wheels don't spin on bay / departure legs:** those legs use the old mover on the frozen car, and the old
+  client wheel spinner only knows the Motor6D wheels.
+- **Next phases:** add `VehicleMovingToBay` / `VehicleReleased` to `PHYSICS_DRIVE_STATES` once the bay and
+  departure paths are made drivable (reverse-out, the turn into bays facing −X). Then convert Estate and Roadster.
+
+## Earlier status
+
+Prototype stage (before wiring): **one physics car prototype plus an AI driver, tested on an isolated test
+track.**
 
 This is the first stage of the "Physics-based autonomous NPC vehicle" master prompt. The user's advice was: get one
 sedan right first, then convert the rest. Phases 0–3 are done. Phases 4–8 (live arrival, bays, departure, other

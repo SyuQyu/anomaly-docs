@@ -2,6 +2,38 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-27 (Aizu + Claude): physics Saloon wired into the roadside arrival (Gameplay, not published)
+
+Detail: [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md) "Live arrival".
+
+- **Scope:** Saloon customers (no flat tyre) arrive in the new `ServerStorage.VehicleTemplates.SaloonPhysics` and
+  physically drive in. Bay, release and departure stay on the old mover with the car frozen rigid. Estate, Roadster
+  and flat-tyre customers are unchanged.
+- **Changed:**
+  - `VehicleService`: Spawn, DriveAlong, groundOffset.
+  - `VehicleConfig`: `PHYSICS_*`.
+  - `ShiftService.serve`: physics approach path.
+  - New `ShopSystem.PhysicsCarService`.
+  - Physics modules: mass from parts, corners from the turning radius, sensor uses the car's collision group.
+  - Saloon handling profile.
+- **New in the place:**
+  - `Arrival.PhysicsArrivalPath` 1–5. The old `ArrivalPath` is untouched.
+  - Collision groups `CustomerCars` / `CarPassThrough`.
+  - Two roadside trees (whose Box collision reaches into the road) set to `CarPassThrough`. Players still collide
+    with them.
+  - Backups in `ServerStorage.ScriptBackups.2026-11-27_BeforePhysicsArrival`.
+- **Fixed on the way:**
+  - Flung at spawn: release now waits 2 physics frames, and mass comes from the parts.
+  - Old route too tight for a real turning circle: it crawled and stopped 3.9° off.
+  - Car floated 0.56 in the bay: ride height now comes from the wheel colliders.
+- **Tested (solo Play, with every template temporarily forced to the physics Saloon and the fault to DeadBattery;
+  both restored):**
+  - Arrival: ~12 s, stop 0.16 from the marker, 0.08 sideways, ≤ 0.56° off parallel, peak roll 0.6°.
+  - Full visit through bay 1, release and departure; car removed.
+  - No console errors.
+- **Not tested:** a natural random Saloon customer, bays 2 and 3, quarantine, declined departure, multiplayer,
+  phones. Wheels don't spin on the old-mover legs.
+
 ## 2026-11-27 (Aizu + Claude): physics car tuning pass (Gameplay, not published)
 
 Detail and before/after table: [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md) "Tuning pass".

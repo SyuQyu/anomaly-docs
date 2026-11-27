@@ -14,6 +14,8 @@ Read in this order:
    countermeasure), with the tested / not tested / blocked report.
 5. [RETAIL_DECOR_HANDOFF.md](RETAIL_DECOR_HANDOFF.md): retail shoppers, backroom / shelf / repair stock, supplier and
    restock, free decoration and build mode, 17 retail anomalies, test results.
+6. [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md): physics customer car prototype (suspension, steering,
+   drivetrain, AI driver), test track, results, and the plan for wiring it into arrivals and bays.
 
 Also here (added 2026-11-21):
 

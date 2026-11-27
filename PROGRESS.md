@@ -2,6 +2,43 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-27 (Aizu + Claude): physics customer car prototype + AI driver, on a test track (Gameplay, not published)
+
+Full detail: [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md).
+
+- **Audit:**
+  - Live customer cars are an anchored `Root` steered by AlignPosition / AlignOrientation. Their wheels are look-only
+    Motor6Ds.
+  - The jack / flat / wheel-change code moves `Root.CFrame` directly, so a physics car will need freezing while it's
+    in a bay.
+- **Prototype:** `ServerStorage.PhysicsLab.NPC_PhysicsVehicle_Prototype`, built from the Sedan, which looks the same.
+  - Four cylinder wheel colliders, each on a CylindricalConstraint (suspension + drive motor) with a SpringConstraint.
+  - Front steering knuckles on HingeConstraint servos.
+  - An invisible body collision box.
+  - A `BodyLift` VectorForce: it scales the car's gravity to 0.35, so suspension, dive and hill climbing feel like a
+    car under Roblox's high gravity.
+- **New modules** in `ServerScriptService.PhysicsVehicle`:
+  - `PhysicsVehicleConfig`: per-model handling profiles and driver tuning.
+  - `PhysicsVehicle`: throttle, brake, steer, park; RWD / FWD / AWD; server network ownership; one Heartbeat only
+    while driving.
+  - `PhysicsDriver`: look-ahead steering, curve, steering-lock and stopping speed limits, throttle/brake controller,
+    obstacle box-cast, stuck recovery.
+- **Test track:** `ServerStorage.PhysicsLab.TestTrack` (bump, curb, ramp, S-bend, U-turn, park box by a curb). Parent
+  it to Workspace to use it. The live map is unchanged.
+- **Tested (solo Play, measured):**
+  - Level static stance.
+  - Independent compression on curb and bump.
+  - Ramp climb.
+  - Steering with Ackermann; returns to centre.
+  - Acceleration and braking with squat and dive.
+  - Full autonomous route: stopped 0.05 studs from target, heading 0.08° off, 0.35 studs average off the line.
+  - Stops for a wall (1.9 studs short) and goes on when it's cleared.
+  - Recovers from a sideways knock.
+  - Four cars at once: ≈ 0.013 ms per car per frame.
+- **Not tested:** 2 / 4-player multiplayer, phones, the two-try stuck cap.
+- **Not done yet:** connecting it to the live arrival, bays, departure or audio; the Estate, Roadster and Saloon.
+  Production scripts and templates were not changed.
+
 ## 2026-11-26 (Aizu + Claude): car door open / shut sounds (Gameplay, not published)
 
 - Clip: Pro Sound Effects "2007 Dodge Charger 6" (9113015345), driver-side door open then shut, 3 s.

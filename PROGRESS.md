@@ -2,6 +2,35 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-27 (Aizu + Claude): physics car tuning pass (Gameplay, not published)
+
+Detail and before/after table: [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md) "Tuning pass".
+
+- **Wheel colliders:** Cylinders → Balls centred 0.5 studs inboard. Flat cylinders made the car resist leaning like a
+  box. Lean is now even and comes from the springs (2.25° at a firm sideways load). The inset stops the ball rubbing
+  curbs.
+- **Car:**
+  - A lift-off zone in the pedal (`EngineBrakeThrottle`) blends engine braking in smoothly.
+  - New `DriveAccel` / `BrakeAccel` / `CoastAccel` helpers.
+- **Driver:**
+  - The whole route's speed is planned up front, ramped down at 3.5 studs/s² before bends, speed changes and the stop.
+  - Feed-forward + PI speed control through one rate-limited pedal.
+  - Full-lock turn when the target is behind the car.
+  - `OffRoute` safety stop.
+  - Stuck handling presses to full throttle before backing off. After two tries it stays `Blocked`, and the count
+    only resets past the stuck spot.
+- **New test helper:** `ServerStorage.PhysicsLab.PhysicsLabTests` (`RunRoute`, `Obstacle`, `Spawn`, `Reset`).
+- **Tested (solo Play):**
+  - Throttle on/off switches 256 → 12 per lap.
+  - Peak controller braking ~5 studs/s² (was 55 / 8).
+  - Straight-line yaw 1.1°/s.
+  - Stop 0.16 studs from target, heading 0.00°.
+  - Steep ramp → retries, then `Blocked`.
+  - Target behind → U-turn and stop.
+  - Wall and 1.2 bar stops.
+  - Four cars at 0.015 ms each.
+- **Not tested:** multiplayer, phones. Still not wired into live customers.
+
 ## 2026-11-27 (Aizu + Claude): physics customer car prototype + AI driver, on a test track (Gameplay, not published)
 
 Full detail: [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md).

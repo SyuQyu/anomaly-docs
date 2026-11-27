@@ -17,6 +17,7 @@ templates, multiplayer) are next, after the user has looked at the prototype.
 | Config (all tunables) | `ServerScriptService.PhysicsVehicle.PhysicsVehicleConfig` |
 | Car controller | `ServerScriptService.PhysicsVehicle.PhysicsVehicle` |
 | AI driver | `ServerScriptService.PhysicsVehicle.PhysicsDriver` |
+| Test helpers | `ServerStorage.PhysicsLab.PhysicsLabTests`: `Spawn`, `Reset`, `Route`, `RunRoute(speed)` (returns a one-line report), `Obstacle(size, z, speed)`. Require it from a Server `execute_luau` in Play; it puts the track in Workspace by itself. |
 
 No production script or template was changed for this work, so there are no new backups.
 
@@ -59,8 +60,15 @@ Made from a clone of the `Sedan` template. The body, glass, lights, plates and p
   is the only body part that collides.
 - **Visual parts:** all massless, no collision, no touch. Seat `Disabled` = true. The old `DriveAlign` / `DriveTurn` /
   `DriveAttachment` were removed.
-- **Wheels:** `Wheels.Wheel<key>.Collider` is an invisible Cylinder (1.1 × 3 × 3, axle along the car's right).
-  - Density 2.5 (≈ 19), friction 1.0, elasticity 0 (ElasticityWeight 100).
+- **Wheels:** `Wheels.Wheel<key>.Collider` is an invisible **Ball** (radius 1.5), centred **0.5 studs inboard** of the
+  visible tyre. Its `Axle` attachment stays at the real hub, so the wheel turns about the same axle.
+  - Density 1.38 (≈ 19.5), friction 1.0, elasticity 0 (ElasticityWeight 100).
+  - Why a ball (changed 2026-11-27): the first build used flat Cylinders. They tilt with the body, so any lean puts
+    the car's weight on each wheel's edge and holds it upright like a box. Roll was 0.3° at a firm sideways load, and
+    halving the springs made no difference. A ball keeps one contact point under the hub, so lean comes only from the
+    springs.
+  - The 0.5 inset keeps the ball's outer edge at curb height level with the tyre's sidewall. Centred on the hub, the
+    ball rubbed the parking curb.
   - The original Tire, Rim and the Sedan's `Hubs.<key>` parts are welded to the Collider, so they spin and steer
     with it.
 - **Front knuckles:** `Steering.Knuckle_FL/FR`, 0.6-stud parts, mass ≈ 19.
@@ -105,6 +113,11 @@ It is one config value; set it to 1 to switch it off. This is a deliberate trade
 - **Inputs:** `SetInput(throttle, brake, steer)`, `SetReverse(on)`, `SetParked(on)`.
   - **Throttle:** the driven wheels' motors aim at top speed with torque = throttle × `DriveTorque` split between
     them. Every driven wheel gets the same torque, so it acts like an open differential.
+  - **Lift-off zone:** below `EngineBrakeThrottle` (0.08) the pedal fades engine braking in, from none at 0.08 to
+    full at 0. Above it, drive torque ramps up from zero. Without this zone the pedal jumped between drive and full
+    engine braking.
+  - `DriveAccel()`, `BrakeAccel()` and `CoastAccel()` turn torques into studs/s² using the car's full mass, for the
+    driver.
   - **Brake:** all wheels aim at 0 with `BrakeTorque`, 60 % on the front.
   - **Coasting:** engine braking on the driven wheels, light rolling drag on the rest.
   - **Parked:** `ParkTorque` on all four.
@@ -126,19 +139,28 @@ It is one config value; set it to 1 to switch it off. This is a deliberate trade
 - **Steering (pure pursuit):** from the rear axle toward a point 4–14 studs ahead (grows with speed).
   - Steer angle = atan(wheelbase × 2x / d²), smoothed.
   - Reversing flips the sign.
-- **Speed is the lowest of:**
-  - The waypoint's speed.
-  - √(lateral-accel ÷ curvature) over the stopping distance ahead.
-  - The speed at which the needed steering angle still fits under the narrowing lock.
-  - A stopping profile to the last point.
-  - An obstacle limit.
-- **Throttle and brake:** a PI controller to that speed.
+- **Speed plan:** worked out once per route.
+  - Each sample's limit is the lowest of: its waypoint's speed; √(lateral-accel ÷ curvature); the speed at which the
+    needed steering angle still fits under the narrowing lock; and 0 at the end when stopping.
+  - A backward pass then ramps every limit down ahead of time at `COMFORT_DECEL` (3.5 studs/s²), so the car eases
+    into bends, speed changes and the final stop.
+  - Obstacles add their own limit while driving.
+- **Speed control:**
+  - Wanted acceleration = feed-forward from the plan's slope + `SPEED_GAIN` × speed error + an integral for slopes.
+  - That becomes a single pedal value (throttle, lift-off zone, or brake) using the car's real torques.
+  - The pedal changes at most `PEDAL_RISE` / `PEDAL_FALL` per second.
+  - A stop or obstacle that needs more than `STOP_TRIGGER_DECEL` brakes at the needed rate.
+- **Target behind the car:** turns at full lock (a U-turn) instead of driving away.
+- **Off route:** more than `OFF_ROUTE_DISTANCE` (50) from the path → it brakes, stops and returns `OffRoute`.
 - **Obstacles:** a box-cast every 0.2 s, from just inside the nose, forward.
   - The box covers 0.9–2.9 studs above the road and spans the car width.
   - Ramp faces (normal.Y > 0.6) and parts too low to see (curbs, bumps) are ignored.
   - Status goes `Driving` → `Yielding` → `Blocked` after 4 s.
-- **Stuck recovery:** full throttle but no movement and nothing seen for 2.5 s → back off 4 studs and retry, at most
-  twice, then `Blocked`.
+- **Stuck recovery:**
+  - Wants to move, isn't moving, and nothing seen: the pedal is pressed up to full over `STUCK_TIME` (2.5 s), then
+    held for `STUCK_HOLD` (1.5 s).
+  - Then it backs off 4 studs and retries, at most twice, then stays `Blocked` with the brake on.
+  - The retry count resets only once the car gets `RECOVER_CLEAR` (6) studs past where it stuck.
 - **Arrival:** within 0.35 studs and slower than 0.25 studs/s → parked, `Arrived`.
 - **Status:** the car's `DriverStatus` attribute.
 
@@ -173,13 +195,37 @@ It is one config value; set it to 1 to switch it off. This is a deliberate trade
   - A 1.2-stud bar: seen, stopped 1.8 short.
   - A 0.8-stud bar: driven over like a curb.
 - **Knocked sideways** (8 studs/s shove + spin): 0.36 studs off line, back within 0.6 s, roll ≤ 2.2°.
-- **Stuck recovery:**
-  - Seen once: an earlier run, before the sensor box was lowered, against a 1.2-stud bar it couldn't see.
-  - The two-try cap was added after that and **not tested** (a hidden wall I made was still seen by the sensor).
+- **Stuck recovery:** tested in the tuning pass below (steep ramp).
 - **Four cars at once:** all arrived; the driver code cost ≈ 0.013 ms per car per frame; physics held 60 Hz in Studio.
 - **Owner:** the server (`GetNetworkOwner()` = nil).
 - **Not tested:** multiplayer (2 and 4 clients), real phones, how it looks from a player's screen at speed, audio
   hooked to the physics readings, any live customer flow.
+
+## Tuning pass (2026-11-27, later)
+
+The same full route (`PhysicsLabTests.RunRoute(16)`), before → after:
+
+| Measure | Before | After |
+|---|---|---|
+| Throttle on/off switches per lap | 256 | 10–12 |
+| Peak acceleration (0.2 s window) | 26.6 | 8.1 |
+| Peak braking from the controller | 55.7 (spiky) | ~5 (final stop 5.1; was 8.0 even after the first rewrite) |
+| Straight-line yaw rate | 4.9°/s | 1.1°/s |
+| Lean at a steady 20 studs/s² sideways push | 0.3° | 2.25° (0.62° at 5, 1.19° at 10; even and spring-driven) |
+| Stop error / heading | 0.17 / 0.08° | 0.16 / 0.00° |
+| Line error mean / max | 0.34 / 0.84 | 0.33 / 0.79 |
+
+- The remaining 9–10 studs/s² deceleration spikes are the wheels physically hitting the bump and curb at ~14 studs/s
+  with the throttle on, not braking.
+- **Steep 3.5-stud ramp it can't climb:** pressed to full throttle, backed off twice, then `Blocked` with the brake on
+  (24 s). Before this pass it sat at half throttle saying "Driving".
+- **Target behind the car:** U-turn about 46 studs wide, came back to the line and stopped 0.15 short with heading
+  0.00°.
+- **Obstacles:**
+  - Wall at 17.6 studs/s: stopped 2.27 short, `Blocked`, went on once it was cleared.
+  - 1.2-stud bar: stopped 2.5 short.
+- **Four cars:** 0.015 ms per car per frame, physics 60 Hz in Studio, all arrived upright.
+- No console errors from these modules.
 
 ## Next steps (phases 4–8, not started)
 

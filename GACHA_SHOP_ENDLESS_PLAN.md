@@ -66,5 +66,5 @@ Endless Night ends on **3 strikes**.
 3. Item shop screen + loadout; gameplay effects one item at a time. **Done 2026-11-24**, except CCTV Film (hidden
    until a camera recording system exists) and Inspector's extra hint line.
 4. Endless Night: van mode pick, teleport data, endless loop and strikes in `ShiftService`, leaderboard. **Done
-   2026-11-24** (mode travels in the match record, not teleport data); still open: the lobby board that displays the
-   best nights, an Endless title on the shift report, a full teleported run.
+   2026-11-24** (mode travels in the match record, not teleport data); still open: a full teleported run. Lobby best-nights board and the Endless
+   report title **done 2026-11-29**.

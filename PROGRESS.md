@@ -2,6 +2,26 @@
 
 Place 111351856377896. Newest first. Plan: [VERTICAL_SLICE_PLAN.md](VERTICAL_SLICE_PLAN.md).
 
+## 2026-11-29 (Syu + Claude): Endless Night best-nights board in the lobby + Endless title on the shift report (Lobby + Gameplay, not published)
+
+Closes two open items from the gacha / item shop / Endless Night plan.
+
+- **Lobby board:** `Workspace.EndlessBoard` (Model > `Board` part > `BoardGui` SurfaceGui) on the back wall above
+  the filing cabinets, in line with the GACHA / SUPPLIES / ROLES signs (x -109.2, z 37.1, 8 x 5.4 studs). Paint
+  backing, paper title strip, one `RowTemplate` cloned per entry, `Empty` line when there is nothing yet; the top 3
+  are gold (`TopColor` / `TopCount` attributes on the template).
+- **Service:** `ServerScriptService.EndlessBoard.EndlessBoardService` (+ `EndlessBoardConfig`: TOP_COUNT 5,
+  REFRESH_SECONDS 60, wording), started by `Matchmaking.LobbyServer`. It only **reads** the existing ordered store
+  `MatchConfig.ENDLESS_BOARD_STORE` (`ANOM_EndlessBest_v1`); the only writer stays the gameplay
+  `ShopSystem.EndlessBoardService.Submit`, called by `ShiftService` when a run ends. Top 5 once a minute, names
+  cached per server, title from `LobbyCopy.Hud.Modes.Endless`.
+- **Shift report:** in Endless the report reads **END OF THE NIGHT** / **NIGHT REPORT** (`ShiftShared.COPY.Report`
+  `EndlessTitle` / `EndlessDocTitle`, set in `ShiftController.renderReport` from `shift.Mode`). Night Shift unchanged.
+- **Checked in Play:** board title, subtitle and empty line fill on start; 5 test entries render (gold top 3, long name
+  cut with ...); forced an ended Endless state in gameplay: report shows the new titles.
+  **Not checked:** real store data (Studio has DataStore API access off, so the read fails with a warning and the
+  board shows the empty line), a real finished Endless run feeding the board.
+
 ## 2026-11-27 (Aizu + Claude): physics Saloon wired into the roadside arrival (Gameplay, not published)
 
 Detail: [PHYSICS_VEHICLE_HANDOFF.md](PHYSICS_VEHICLE_HANDOFF.md) "Live arrival".
